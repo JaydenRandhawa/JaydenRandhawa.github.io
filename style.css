@@ -116,7 +116,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 105%;
+  top: 107%;
   animation-name: move;
   animation-duration: 1s;
   left: 25%;
@@ -130,7 +130,7 @@ a:hover{
   position: absolute;
   text-align: center;
   width: 30%;
-  top: 140%;
+  top: 150%;
   animation-name: move;
   animation-duration: 1s;
   left: 25%;
@@ -146,7 +146,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 105%;
+  top: 107%;
   animation-name: move;
   animation-duration: 1s;
   left: 75%;
@@ -159,13 +159,41 @@ a:hover{
 .scheduleSubtitle {
   position: absolute;
   text-align: center;
-  top: 140%;
+  top: 150%;
   animation-name: move;
   animation-duration: 1s;
   left: 75%;
   transform: translate(-50%, -50%);
 
   color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+/** Conditions Section **/
+
+.conditionsTitle {
+  text-align: center;
+  position: absolute;
+  top: 205%;
+  animation-name: move;
+  animation-duration: 1s;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(200, 200, 200);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.conditionsSubtitle {
+  position: absolute;
+  text-align: center;
+  top: 250%;
+  animation-name: move;
+  animation-duration: 1s;
+  left: 75%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(200, 200, 200);
   font-family: 'Signika Negative', sans-serif;
 }
 
