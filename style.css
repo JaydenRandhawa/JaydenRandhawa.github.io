@@ -68,7 +68,7 @@ a:hover{
 .page3Image{
   background-color: rgb(0, 0, 0);
   filter: brightness(2);
-  background-image: url("Assets/backgrounds/diagonalLines.jpg");
+  background-image: url("Assets/backgrounds/darkBackground2.png");
   min-height: 100vh;
   background-attachment: scroll;
   background-position: center;
@@ -78,7 +78,7 @@ a:hover{
 
 .page4Image{
   background-color: rgb(0, 0, 0);
-  background-image: url("Assets/backgrounds/darkBackground2.png");
+  background-image: url("Assets/backgrounds/lightBackground.png");
   min-height: 100vh;
   background-attachment: scroll;
   background-position: center;
@@ -89,7 +89,7 @@ a:hover{
 .page5Image{
   background-color: rgb(0, 0, 0);
   filter: brightness(2);
-  background-image: url("Assets/backgrounds/diagonalLines.jpg");
+  background-image: url("Assets/backgrounds/darkBackground2.png");
   min-height: 100vh;
   background-attachment: scroll;
   background-position: center;
@@ -210,7 +210,7 @@ a:hover{
   position: absolute;
   text-align: center;
   top: 225%;
-  left: 25%;
+  left: 28%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -222,8 +222,8 @@ a:hover{
   line-height: 35px;
   text-align: left;
   font-size: 22px;
-  top: 250%;
-  left: 30%;
+  top: 255%;
+  left: 33%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -236,7 +236,7 @@ a:hover{
   position: absolute;
   text-align: center;
   top: 225%;
-  left: 75%;
+  left: 78%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -248,8 +248,8 @@ a:hover{
   line-height: 35px;
   text-align: left;
   font-size: 22px;
-  top: 250%;
-  left: 76%;
+  top: 255%;
+  left: 79%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -265,7 +265,7 @@ a:hover{
   left: 50%;
   transform: translate(-50%, -50%);
 
-  color: rgb(200, 200, 200);
+  color: rgb(0, 0, 0);
   font-family: 'Signika Negative', sans-serif;
 }
 
@@ -278,7 +278,7 @@ a:hover{
   left: 16%;
   transform: translate(-50%, -50%);
 
-  color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
   font-family: 'Signika Negative', sans-serif;
 }
 
@@ -291,7 +291,7 @@ a:hover{
   left: 49%;
   transform: translate(-50%, -50%);
 
-  color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
   font-family: 'Signika Negative', sans-serif;
 }
 
@@ -304,7 +304,7 @@ a:hover{
   left: 82%;
   transform: translate(-50%, -50%);
 
-  color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
   font-family: 'Signika Negative', sans-serif;
 }
 
@@ -389,12 +389,23 @@ a:hover{
   font-family: 'Signika Negative', sans-serif;
 }
 
+.educationSubtitle{
+  position: absolute;
+  text-align: center;
+  top: 535%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
 .educationList1{
   width: 25%;
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 550%;
+  top: 575%;
   left: 15%;
   transform: translate(-50%, -50%);
 
@@ -407,7 +418,7 @@ a:hover{
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 550%;
+  top: 575%;
   left: 48%;
   transform: translate(-50%, -50%);
 
@@ -420,7 +431,7 @@ a:hover{
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 550%;
+  top: 574%;
   left: 81%;
   transform: translate(-50%, -50%);
 
@@ -428,7 +439,8 @@ a:hover{
   font-family: 'Signika Negative', sans-serif;
 }
 
-#page6 div1{
+#page6 a{
+  text-decoration: none;
   transition-duration: 500ms;
 }
 
