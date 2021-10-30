@@ -164,6 +164,7 @@ a:hover{
 .scheduleSubtitle {
   position: absolute;
   text-align: center;
+  font-size: 32px;
   top: 150%;
   left: 75%;
   transform: translate(-50%, -50%);
@@ -204,7 +205,7 @@ a:hover{
   text-align: left;
   font-size: 22px;
   top: 250%;
-  left: 25%;
+  left: 30%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -230,7 +231,7 @@ a:hover{
   text-align: left;
   font-size: 22px;
   top: 250%;
-  left: 75%;
+  left: 76%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
@@ -250,16 +251,51 @@ a:hover{
   font-family: 'Signika Negative', sans-serif;
 }
 
-.skillsList{
+.skillsList1{
+  width: 25%;
   position: absolute;
-  text-align: left;
+  text-align: center;
   font-size: 22px;
   top: 350%;
-  left: 50%;
+  left: 16%;
   transform: translate(-50%, -50%);
 
   color: rgb(255, 255, 255);
   font-family: 'Signika Negative', sans-serif;
+}
+
+.skillsList2{
+  width: 25%;
+  position: absolute;
+  text-align: center;
+  font-size: 22px;
+  top: 350%;
+  left: 49%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(255, 255, 255);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.skillsList3{
+  width: 25%;
+  position: absolute;
+  text-align: center;
+  font-size: 22px;
+  top: 350%;
+  left: 82%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(255, 255, 255);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+#page4 div1{
+  transition-duration: 500ms;
+}
+
+#page4 div1:hover{
+  color: rgb(250, 74, 74);
 }
 
 /** Misc **/
