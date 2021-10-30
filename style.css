@@ -114,6 +114,26 @@ a:hover{
   background-size: 60%;
 }
 
+.salarySubImage{
+  background-color: rgb(66,146,51);
+  background-image: url('Assets/intervalImages/salaryImage.png');
+  height: 50vh;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 45%;
+}
+
+.pcSubImage{
+  background-color: rgb(66,146,51);
+  background-image: url('Assets/intervalImages/prosAndConsImage.png');
+  height: 50vh;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 60%;
+}
+
 .page6Image{
   background-image: url("Assets/backgrounds/lightBackground.png");
   min-height: 100vh;
@@ -471,7 +491,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 805%;
+  top: 855%;
   left: 25%;
   transform: translate(-50%, -50%);
 
@@ -483,7 +503,7 @@ a:hover{
   position: absolute;
   text-align: center;
   width: 30%;
-  top: 838%;
+  top: 888%;
   left: 25%;
   transform: translate(-50%, -50%);
 
@@ -497,7 +517,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 805%;
+  top: 855%;
   left: 75%;
   transform: translate(-50%, -50%);
 
@@ -508,7 +528,7 @@ a:hover{
 .salarySubtitle{
   position: absolute;
   text-align: center;
-  top: 838%;
+  top: 888%;
   left: 75%;
   transform: translate(-50%, -50%);
 
@@ -518,7 +538,7 @@ a:hover{
 
 .salaryImage{
   position: absolute;
-  top: 883%;
+  top: 933%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
@@ -528,7 +548,7 @@ a:hover{
 .pTitle {
   text-align: center;
   position: absolute;
-  top: 905%;
+  top: 1005%;
   left: 50%;
   transform: translate(-50%, -50%);
 
@@ -539,7 +559,7 @@ a:hover{
 .cTitle {
   text-align: center;
   position: absolute;
-  top: 948%;
+  top: 1048%;
   left: 50%;
   transform: translate(-50%, -50%);
 
@@ -552,7 +572,7 @@ a:hover{
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 950%;
+  top: 1050%;
   left: 16%;
   transform: translate(-50%, -50%);
 
@@ -565,7 +585,7 @@ a:hover{
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 950%;
+  top: 1050%;
   left: 49%;
   transform: translate(-50%, -50%);
 
@@ -578,7 +598,7 @@ a:hover{
   position: absolute;
   text-align: center;
   font-size: 22px;
-  top: 950%;
+  top: 1050%;
   left: 82%;
   transform: translate(-50%, -50%);
 
@@ -607,7 +627,7 @@ a:hover{
 .descriptionTitle{
   text-align: center;
   position: absolute;
-  top: 1007%;
+  top: 1107%;
   left: 50%;
   transform: translate(-50%, -50%);
 
@@ -619,7 +639,7 @@ a:hover{
   position: absolute;
   text-align: center;
   width: 70%;
-  top: 1060%;
+  top: 1150%;
   left: 50%;
   transform: translate(-50%, -50%);
 
