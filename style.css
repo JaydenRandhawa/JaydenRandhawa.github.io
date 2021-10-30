@@ -123,7 +123,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 107%;
+  top: 110%;
   left: 25%;
   transform: translate(-50%, -50%);
 
@@ -149,7 +149,7 @@ a:hover{
   width: 500px;
   text-align: center;
   position: absolute;
-  top: 107%;
+  top: 110%;
   left: 75%;
   transform: translate(-50%, -50%);
 
@@ -482,6 +482,69 @@ a:hover{
   top: 683%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/** Pros and Cons Section **/
+
+.pTitle {
+  text-align: center;
+  position: absolute;
+  top: 705%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.cTitle {
+  text-align: center;
+  position: absolute;
+  top: 748%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.pcList1{
+  width: 25%;
+  position: absolute;
+  text-align: center;
+  font-size: 22px;
+  top: 750%;
+  left: 16%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.pcList2{
+  width: 25%;
+  position: absolute;
+  text-align: center;
+  font-size: 22px;
+  top: 750%;
+  left: 49%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.pcList3{
+  width: 25%;
+  position: absolute;
+  text-align: center;
+  font-size: 22px;
+  top: 750%;
+  left: 82%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
 }
 
 /** Misc **/
