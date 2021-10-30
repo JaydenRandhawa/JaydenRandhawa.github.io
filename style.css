@@ -30,8 +30,7 @@ h2{
 }
 
 .navbar a{
-  padding: 0px;
-  /* background-color: rgb(34, 34, 34); */
+  padding: 5.6px;
   color: whitesmoke;
   font-size: 24px;
   text-decoration: none;
@@ -59,7 +58,7 @@ a:hover{
   background-color: rgb(204, 204, 204);
   background-image: url("Assets/backgrounds/lightBackground.png");
   min-height: 100vh;
-  background-attachment: scroll;
+  background-attachment: fixed;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -69,7 +68,7 @@ a:hover{
   background-color: rgb(0, 0, 0);
   background-image: url("Assets/backgrounds/darkBackground2.png");
   min-height: 100vh;
-  background-attachment: scroll;
+  background-attachment: fixed;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -544,6 +543,47 @@ a:hover{
   transform: translate(-50%, -50%);
 
   color: rgb(0, 0, 0);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.p{
+  transition-duration: 500ms;
+}
+
+.p:hover{
+  color: rgb(0, 202, 0);
+}
+
+.c{
+  transition-duration: 500ms;
+}
+
+.c:hover{
+  color: red;
+}
+
+/** Description Section **/
+
+.descriptionTitle{
+  text-align: center;
+  position: absolute;
+  top: 807%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(255, 255, 255);
+  font-family: 'Signika Negative', sans-serif;
+}
+
+.descriptionSubtitle{
+  position: absolute;
+  text-align: center;
+  width: 70%;
+  top: 850%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  color: rgb(255, 255, 255);
   font-family: 'Signika Negative', sans-serif;
 }
 
