@@ -45,7 +45,7 @@ a:hover{
 /** Section Images **/
 
 .introImage{
-  background-image: url("Assets/power-grid-merl.jpg");
+  background-image: url("https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/power-grid-merl.jpg");
   filter: blur(4px);
   min-height: 100vh;
   background-attachment: fixed;
@@ -56,7 +56,7 @@ a:hover{
 
 .lightImage{
   background-color: rgb(204, 204, 204);
-  background-image: url("Assets/backgrounds/lightBackground.png");
+  background-image: url("https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/backgrounds/lightBackground.png");
   min-height: 100vh;
   background-attachment: fixed;
   background-position: center;
@@ -66,7 +66,7 @@ a:hover{
 
 .darkImage{
   background-color: rgb(0, 0, 0);
-  background-image: url("Assets/backgrounds/darkBackground2.png");
+  background-image: url("https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/backgrounds/darkBackground2.png");
   min-height: 100vh;
   background-attachment: fixed;
   background-position: center;
@@ -76,7 +76,7 @@ a:hover{
 
 .conditionsSubImage{
   background-color: rgb(3,178,178);
-  background-image: url('Assets/intervalImages/conditionsImage.png');
+  background-image: url('https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/conditionsImage.png');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -86,7 +86,7 @@ a:hover{
 
 .skillsSubImage{
   background-color: rgb(0,176,195);
-  background-image: url('Assets/intervalImages/responsibilitiesImage.jpg');
+  background-image: url('https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/intervalImages/responsibilitiesImage.jpg');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -96,7 +96,7 @@ a:hover{
 
 .certificationSubImage{
   background-color: rgb(43,172,234);
-  background-image: url('Assets/intervalImages/certificationImage.png');
+  background-image: url('https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/intervalImages/certificationImage.png');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -106,7 +106,7 @@ a:hover{
 
 .educationSubImage{
   background-color: rgb(66,146,51);
-  background-image: url('Assets/intervalImages/educationImage.webp');
+  background-image: url('https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/intervalImages/educationImage.webp');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -116,7 +116,7 @@ a:hover{
 
 .salarySubImage{
   background-color: rgb(66,146,51);
-  background-image: url('Assets/intervalImages/salaryImage.png');
+  background-image: url('https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/intervalImages/salaryImage.png');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -126,7 +126,7 @@ a:hover{
 
 .pcSubImage{
   background-color: rgb(66,146,51);
-  background-image: url('Assets/intervalImages/prosAndConsImage.png');
+  background-image: url('https://github.com/JaydenRandhawa/JaydenRandhawa.github.io/blob/master/Assets/intervalImages/prosAndConsImage.png');
   height: 50vh;
   background-attachment: fixed;
   background-position: center;
@@ -135,7 +135,7 @@ a:hover{
 }
 
 .page6Image{
-  background-image: url("Assets/backgrounds/lightBackground.png");
+  background-image: url("https://raw.githubusercontent.com/JaydenRandhawa/JaydenRandhawa.github.io/master/Assets/backgrounds/lightBackground.png");
   min-height: 100vh;
   background-attachment: scroll;
   background-position: center;
