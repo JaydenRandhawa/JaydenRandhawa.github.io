@@ -75,6 +75,9 @@
   .gap.today{border-bottom-color:var(--accent)}
   .gap-run{height:30px;border-bottom:1px dashed var(--line2);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12.5px}
   .btn.sm{min-height:36px;padding:0 13px;font-size:14px}
+  a.btn{text-decoration:none}
+  .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:6px;color:var(--ink);font-size:15.5px;cursor:pointer}
+  .chk input{width:22px;height:22px;accent-color:var(--accent);flex:none}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
 
   /* ---------- rows ---------- */
@@ -168,6 +171,7 @@
     <input id="title" type="text" maxlength="80" aria-label="List title" placeholder="Name this list" spellcheck="false">
     <div class="flex items-center">
       <button id="btn-lock" class="icon-btn" data-action="lock-now" aria-label="Lock now" hidden><span data-ic="lock" data-s="20"></span></button>
+      <button id="btn-cal" class="icon-btn" data-action="open-cal" aria-label="Calendar feed"><span data-ic="cal" data-s="22"></span></button>
       <button id="btn-sync" class="icon-btn" data-action="open-sync" aria-label="Sync and privacy settings"><span data-ic="cloud" data-s="22"></span><span id="sync-dot" class="sdot"></span></button>
     </div>
   </header>
@@ -218,6 +222,7 @@
       <label class="fld"><span id="lbl-todo">To-do date</span><input id="f-todo" type="date"></label>
       <label class="fld"><span>Due date</span><input id="f-due" type="date"></label>
     </div>
+    <label class="chk"><input type="checkbox" id="f-cal"><span>Show on my calendar feed</span></label>
     <p class="hint">The to-do date is when you plan to work on it. The due date is the official deadline. Adding a to-do date to an unorganized task schedules it.</p>
     <div class="sheet-foot">
       <button type="button" class="btn danger" id="btn-del" data-action="delete-task">Delete</button>
@@ -282,11 +287,14 @@
 service cloud.firestore {
   match /databases/{db}/documents {
     match /paperTodo/{accountId} {
-      allow read, write: if true;
+      allow get, write: if true;
+    }
+    match /paperTodoCal/{token} {
+      allow get, write: if true;
     }
   }
 }</pre>
-        <p>These rules rely on the account ID acting like a secret, so keep it long and private, and turn on the passphrase lock so the stored data is encrypted.</p>
+        <p>These rules let anyone who knows a document's exact name read or write it, but nobody can list the collections. The account ID and the calendar token act as secrets, so keep them private, and turn on the passphrase lock so your list is encrypted.</p>
       </details>
     </section>
 
@@ -301,7 +309,56 @@ service cloud.firestore {
   </div>
 </div>
 
-<div id="toast" role="status" aria-live="polite"></div>
+<!-- Calendar modal -->
+<div id="m-cal" class="overlay" hidden>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="cal-h">
+    <div class="sheet-head">
+      <h2 id="cal-h" class="hand">Calendar</h2>
+      <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
+    </div>
+    <p class="hint">Tick "Show on my calendar feed" on the tasks you want, then subscribe once on your phone. Their to-do and due dates appear as all-day events, and completed tasks drop off.</p>
+    <div id="cal-off">
+      <p id="cal-need" class="hint"></p>
+      <button type="button" class="btn primary" data-action="cal-on">Turn on calendar feed</button>
+    </div>
+    <div id="cal-on" hidden>
+      <p id="cal-count" class="status synced" style="margin-top:0"></p>
+      <p id="cal-err" class="err"></p>
+      <label class="fld"><span>iPhone, iPad and Mac link</span>
+        <div class="inline"><input id="cal-webcal" class="inp" readonly aria-label="Subscribe link for Apple Calendar"><button type="button" class="btn" data-action="copy" data-target="cal-webcal">Copy</button></div>
+      </label>
+      <label class="fld"><span>Google Calendar link (Other calendars, From URL)</span>
+        <div class="inline"><input id="cal-https" class="inp" readonly aria-label="Subscribe link for Google Calendar"><button type="button" class="btn" data-action="copy" data-target="cal-https">Copy</button></div>
+      </label>
+      <div class="row-btns">
+        <a id="cal-open" class="btn primary" href="#">Subscribe on this device</a>
+        <button type="button" class="btn" data-action="cal-regen">Make a new link</button>
+        <button type="button" class="btn danger" data-action="cal-off">Turn off</button>
+      </div>
+    </div>
+    <section class="blk">
+      <div id="cal-base-row">
+        <label class="fld"><span>Worker URL</span><input id="cal-base" class="inp" placeholder="https://todo-calendar.yourname.workers.dev" autocapitalize="off" spellcheck="false"></label>
+      </div>
+      <details>
+        <summary>Set up the free Cloudflare Worker (one time)</summary>
+        <p>Calendar apps need a web address that serves an .ics file, and a static GitHub Pages site can't do that. A tiny free Cloudflare Worker reads the feed from Firestore and hands it to your calendar.</p>
+        <ol>
+          <li>Create a free account at dash.cloudflare.com.</li>
+          <li>Open Workers &amp; Pages, create a new Worker, and name it (for example <code>todo-calendar</code>).</li>
+          <li>Open its code editor, replace everything with the code below, and deploy.</li>
+          <li>Copy the address ending in <code>.workers.dev</code> into the Worker URL box above.</li>
+          <li>Add the <code>paperTodoCal</code> block to your Firestore rules (see the setup steps in the cloud settings).</li>
+        </ol>
+        <pre id="worker-code"></pre>
+        <button type="button" class="btn sm" data-action="copy" data-target="worker-code">Copy code</button>
+      </details>
+      <p class="hint" style="margin-top:14px">Privacy: items on the feed (title, tag, notes and dates) are stored unencrypted in Firestore, even with the passphrase lock on, because your calendar app can't decrypt them. Only items you tick are included. Anyone with the link can see them, and "Make a new link" cuts off the old one. Apple Calendar refreshes within hours, while Google Calendar can take up to about a day.</p>
+    </section>
+  </div>
+</div>
+
+<div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
 <script>
@@ -374,19 +431,22 @@ function normTask(t) {
     prevStatus: STATUSES.includes(t.prevStatus) ? t.prevStatus : null,
     createdAt: +t.createdAt || Date.now(),
     updatedAt: +t.updatedAt || Date.now(),
-    completedAt: +t.completedAt || null
+    completedAt: +t.completedAt || null,
+    cal: !!t.cal
   };
 }
+function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0 }; }
 function normalizeState(s) {
   s = s || {};
   const cutoff = Date.now() - 30 * DAY;
   return {
     title: typeof s.title === 'string' ? s.title : 'TODO school',
     titleAt: +s.titleAt || 0,
+    cal: normCal(s.cal),
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).filter(t => t && typeof t === 'object').map(normTask).filter(t => !t.deleted || t.updatedAt > cutoff)
   };
 }
-const emptyState = () => ({ title: 'TODO school', titleAt: 0, tasks: [] });
+const emptyState = () => ({ title: 'TODO school', titleAt: 0, cal: { token: '', at: 0 }, tasks: [] });
 const find = id => state.tasks.find(t => t.id === id && !t.deleted);
 const touch = t => { t.updatedAt = Date.now(); };
 function canonTag(tag) {
@@ -403,10 +463,10 @@ function mergeStates(a, b) {
     if (!c || t.updatedAt > c.updatedAt) map.set(t.id, t);
   }
   const useB = (b.titleAt || 0) > (a.titleAt || 0);
-  return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, tasks: [...map.values()] };
+  return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, tasks: [...map.values()] };
 }
 const canon = s => JSON.stringify({
-  t: s.title, a: s.titleAt,
+  t: s.title, a: s.titleAt, c: s.cal.token + '|' + s.cal.at,
   k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(t => JSON.stringify(t, Object.keys(t).sort()))
 });
 
@@ -460,7 +520,7 @@ const commit = () => { render(); save(); };
 /* =====================================================================
    Cloud sync (Firestore, loaded on demand)
    ===================================================================== */
-const sync = { status: 'off', msg: '', at: null, app: null, ref: null, unsub: null, pushT: null, blocked: false };
+const sync = { status: 'off', msg: '', at: null, app: null, ref: null, unsub: null, pushT: null, blocked: false, db: null, feedErr: '' };
 function setStatus(k, msg = '') {
   sync.status = k; sync.msg = msg;
   if (k === 'synced') sync.at = new Date();
@@ -500,7 +560,7 @@ const getCfg = () => fileCfg() || settings.cfg;
 function teardownSync() {
   clearTimeout(sync.pushT);
   if (sync.unsub) { try { sync.unsub(); } catch {} }
-  const a = sync.app; sync.unsub = null; sync.app = null; sync.ref = null;
+  const a = sync.app; sync.unsub = null; sync.app = null; sync.ref = null; sync.db = null;
   if (a) a.delete().catch(() => {});
 }
 async function connectSync() {
@@ -509,7 +569,7 @@ async function connectSync() {
   try {
     await loadFirebase();
     sync.app = firebase.initializeApp(getCfg(), 'todo-' + Date.now());
-    sync.ref = sync.app.firestore().collection('paperTodo').doc(settings.accountId);
+    sync.db = sync.app.firestore(); sync.ref = sync.db.collection('paperTodo').doc(settings.accountId);
     sync.unsub = sync.ref.onSnapshot(onRemote, err => setStatus('error', err.message));
   } catch (e) { setStatus('error', e.message); }
 }
@@ -538,6 +598,7 @@ async function pushNow() {
     const env = await seal(state);
     await sync.ref.set({ payload: JSON.stringify(env), updatedAt: Date.now() });
     setStatus('synced');
+    pushFeed();
   } catch (e) { setStatus('error', e.message); }
 }
 
@@ -636,6 +697,7 @@ function rowHTML(t, showTag, secId) {
     meta += `<span class="pill ${g < 0 ? 'red' : ''}" title="Gap between your to-do date and the due date">${txt}</span>`;
   }
   if (secId === 'todo') meta += `<button type="button" class="pill ${t.status === 'progress' ? 'accent' : ''}" data-action="cycle" title="Change status">${t.status === 'progress' ? 'In progress' : 'Scheduled'}</button>`;
+  if (t.cal && !done && (t.todoDate || t.dueDate)) meta += `<button type="button" class="pill accent" data-action="uncal" title="Remove from calendar feed">${ic('cal', 12)}On calendar</button>`;
   if (done && t.completedAt) meta += `<span class="pill">Done ${fmt(ymd(new Date(t.completedAt)))}</span>`;
   return `<li class="row ${done ? 'done' : ''} ${u === 'overdue' ? 'overdue' : ''} ${u === 'soon' ? 'soon' : ''} ${lastToggled === t.id ? 'just' : ''}" data-id="${esc(t.id)}">
     <button type="button" class="check" data-action="toggle" aria-pressed="${done}" aria-label="${done ? 'Mark not done' : 'Mark done'}: ${esc(t.title)}"><span class="box">${done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="24" d="M20 6 9 17l-5-5"/></svg>' : ''}</span></button>
@@ -745,7 +807,7 @@ function openTask(id, preset) {
   const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', status: 'unorganized', ...(preset || {}) };
   $('#task-heading').textContent = t ? 'Edit ' + (p.kind === 'reminder' ? 'reminder' : 'task') : (p.kind === 'reminder' ? 'New reminder' : 'New task');
   $('#f-title').value = p.title; $('#f-notes').value = p.notes; $('#f-tag').value = p.tag || '';
-  $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-status').value = p.status;
+  $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-status').value = p.status; $('#f-cal').checked = !!p.cal;
   $('#btn-del').hidden = !t;
   setKind(p.kind);
   openModal('m-task');
@@ -756,7 +818,7 @@ function saveTask() {
   if (!title) { $('#f-title').focus(); toast('Give the task a title.'); return; }
   const v = {
     title, notes: $('#f-notes').value.trim(), tag: canonTag($('#f-tag').value.trim()), kind: formKind,
-    todoDate: $('#f-todo').value, dueDate: $('#f-due').value, status: $('#f-status').value
+    todoDate: $('#f-todo').value, dueDate: $('#f-due').value, status: $('#f-status').value, cal: $('#f-cal').checked
   };
   if (v.kind === 'task' && v.status === 'unorganized' && v.todoDate) v.status = 'scheduled';
   const t = editingId ? find(editingId) : null;
@@ -831,6 +893,95 @@ async function doConnect() {
 }
 function disconnect() { teardownSync(); settings.sync = false; saveSettings(); setStatus('off'); }
 
+/* ---------- calendar feed ---------- */
+const icsText = x => String(x).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsStamp = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+function icsFold(line) {
+  const c = Array.from(line);
+  if (c.length <= 60) return line;
+  const out = [c.slice(0, 60).join('')];
+  for (let i = 60; i < c.length; i += 58) out.push(' ' + c.slice(i, i + 58).join(''));
+  return out.join('\r\n');
+}
+const feedItems = () => state.tasks.filter(t => !t.deleted && t.cal && t.status !== 'completed' && (t.todoDate || t.dueDate));
+function buildICS() {
+  const stamp = icsStamp(new Date());
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Paper Todo//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + icsText(state.title || 'Todo'), 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+  feedItems().forEach(t => {
+    const desc = [t.tag ? 'Tag: ' + t.tag : '', t.notes].filter(Boolean).join('\n');
+    const add = (d, prefix, suffix) => {
+      const next = parseD(d); next.setDate(next.getDate() + 1);
+      L.push('BEGIN:VEVENT', `UID:${t.id}-${suffix}@paper-todo`, `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${d.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${ymd(next).replace(/-/g, '')}`,
+        `SUMMARY:${icsText(prefix + t.title)}`);
+      if (desc) L.push('DESCRIPTION:' + icsText(desc));
+      L.push('TRANSP:TRANSPARENT', 'END:VEVENT');
+    };
+    if (t.todoDate && t.todoDate !== t.dueDate) add(t.todoDate, t.kind === 'reminder' ? '' : 'Do: ', 'do');
+    if (t.dueDate) add(t.dueDate, 'Due: ', 'due');
+  });
+  L.push('END:VCALENDAR');
+  return L.map(icsFold).join('\r\n') + '\r\n';
+}
+async function pushFeed() {
+  if (!sync.db || !state || !state.cal.token) return;
+  try { await sync.db.collection('paperTodoCal').doc(state.cal.token).set({ ics: buildICS(), updatedAt: Date.now() }); sync.feedErr = ''; }
+  catch (e) { sync.feedErr = e.message; }
+  if (!$('#m-cal').hidden) refreshCal();
+}
+function deleteFeedDoc(token) { if (sync.db && token) sync.db.collection('paperTodoCal').doc(token).delete().catch(() => {}); }
+const fileFeedBase = () => {
+  let b = '';
+  try { if (typeof CALENDAR_FEED_URL !== 'undefined') b = CALENDAR_FEED_URL; } catch {}
+  return String(b || window.CALENDAR_FEED_URL || '').trim().replace(/\/+$/, '');
+};
+const feedBase = () => fileFeedBase() || String(settings.feedBase || '').trim().replace(/\/+$/, '');
+function workerCode() {
+  const c = getCfg() || {};
+  return String.raw`const PROJECT_ID = '${c.projectId || 'YOUR_PROJECT_ID'}';
+const API_KEY = '${c.apiKey || 'YOUR_API_KEY'}';
+
+export default {
+  async fetch(request) {
+    const token = new URL(request.url).pathname.replace(/^\/|\.ics$/g, '');
+    if (!/^[a-f0-9]{20,64}$/.test(token)) return new Response('Not found', { status: 404 });
+    const api = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID +
+      '/databases/(default)/documents/paperTodoCal/' + token + '?key=' + API_KEY;
+    const res = await fetch(api);
+    if (!res.ok) return new Response('Not found', { status: 404 });
+    const doc = await res.json();
+    const ics = doc.fields && doc.fields.ics && doc.fields.ics.stringValue;
+    if (!ics) return new Response('Not found', { status: 404 });
+    return new Response(ics, { headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'public, max-age=300' } });
+  }
+};`;
+}
+function refreshCal() {
+  const on = !!state.cal.token, base = feedBase(), fromFile = !!fileFeedBase();
+  $('#cal-off').hidden = on; $('#cal-on').hidden = !on;
+  $('#cal-need').textContent = sync.db ? '' : 'Calendar feeds need cloud sync. Connect it in the cloud settings first.';
+  $('#cal-base-row').hidden = fromFile;
+  if (!fromFile) $('#cal-base').value = settings.feedBase || '';
+  $('#worker-code').textContent = workerCode();
+  if (!on) return;
+  const n = feedItems().length;
+  $('#cal-count').textContent = `${n} item${n === 1 ? '' : 's'} on your calendar feed.`;
+  const https = base ? `${base}/${state.cal.token}.ics` : '';
+  const webcal = https.replace(/^https?:/, 'webcal:');
+  $('#cal-https').value = https; $('#cal-webcal').value = webcal;
+  const open = $('#cal-open'); open.href = https ? webcal : '#'; open.hidden = !https;
+  $('#cal-err').textContent = sync.feedErr
+    ? 'Feed upload problem: ' + sync.feedErr + (/permission/i.test(sync.feedErr) ? ' Update your Firestore rules (see the cloud settings).' : '')
+    : (base ? '' : 'Add your Worker URL below to get the subscribe links.');
+}
+function openCal() { if (!state) return; refreshCal(); openModal('m-cal'); }
+function newFeedToken() { deleteFeedDoc(state.cal.token); state.cal = { token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); }
+function copyText(text) {
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Copied.'); } catch { toast('Could not copy. Select the text and copy it by hand.'); } ta.remove(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied.'), fallback); else fallback();
+}
+
 /* ---------- backup ---------- */
 function exportData() {
   const blob = new Blob([JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), data: state }, null, 2)], { type: 'application/json' });
@@ -875,6 +1026,12 @@ document.addEventListener('click', async e => {
     case 'import': $('#file').click(); break;
     case 'sample': addSamples(); break;
     case 'clear-done': clearCompleted(); break;
+    case 'uncal': { const k = find(id); if (k) { k.cal = false; touch(k); commit(); } break; }
+    case 'open-cal': openCal(); break;
+    case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
+    case 'cal-regen': if (confirm('Make a new link? Calendars subscribed to the old link will stop updating.')) newFeedToken(); break;
+    case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { token: '', at: Date.now() }; commit(); refreshCal(); } break;
+    case 'copy': { const tgt = $('#' + el.dataset.target); copyText('value' in tgt ? tgt.value : tgt.textContent); break; }
     case 'reset-local': if (confirm("Erase this device's copy? Encrypted data in the cloud (if you sync) is not affected.")) { localStorage.removeItem(KEY); location.reload(); } break;
   }
 });
@@ -882,6 +1039,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModals();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.row-body')) { e.preventDefault(); e.target.click(); }
 });
+$('#cal-base').addEventListener('change', e => { settings.feedBase = e.target.value.trim(); saveSettings(); refreshCal(); });
 $('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
 $('#lock-form').addEventListener('submit', e => { e.preventDefault(); tryUnlock(); });
 $('#title').addEventListener('input', e => { state.title = e.target.value; state.titleAt = Date.now(); document.title = state.title || 'Todo'; save(); });
