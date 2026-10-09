@@ -1,4 +1,4 @@
-const CALENDAR_FEED_URL = "https://your-worker.workers.dev"; to firebase-config.js
+const CALENDAR_FEED_URL = "https://your-worker.workers.dev";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCSOut46JTbkMuKTtXYZui6l29_YFMScHA",
