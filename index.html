@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Delius&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
 <style>
@@ -29,13 +29,13 @@
   html{background:var(--bg)}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
   body.modal-open{overflow:hidden}
-  .hand{font-family:'Patrick Hand','Segoe Print','Bradley Hand','Comic Sans MS',cursive;font-weight:400}
+  .hand{font-family:'Delius','Segoe Print','Bradley Hand','Comic Sans MS',cursive;font-weight:400}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
   .wrap{max-width:760px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right)) calc(72px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 
   /* ---------- header ---------- */
-  #title{flex:1;min-width:0;background:transparent;border:0;border-bottom:1.5px dashed transparent;border-radius:0;color:var(--ink);font:400 clamp(36px,8vw,52px)/1.15 'Patrick Hand','Segoe Print','Bradley Hand',cursive;padding:2px 0;outline:none}
+  #title{flex:1;min-width:0;background:transparent;border:0;border-bottom:1.5px dashed transparent;border-radius:0;color:var(--ink);font:400 clamp(32px,7.5vw,46px)/1.2 'Delius','Segoe Print','Bradley Hand',cursive;padding:2px 0;outline:none}
   #title:hover{border-bottom-color:var(--line2)}
   #title:focus{border-bottom-color:var(--accent)}
   .icon-btn{position:relative;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--dim);flex:none}
@@ -61,7 +61,7 @@
   .sec{margin-top:34px}
   .sec-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--line2)}
   .sec-toggle{display:flex;align-items:baseline;gap:10px;flex:1;min-height:48px;text-align:left}
-  .sec-name{font-size:32px;font-weight:400;line-height:1.1;display:inline-flex;align-items:center;gap:8px}
+  .sec-name{font-size:27px;font-weight:400;line-height:1.15;display:inline-flex;align-items:center;gap:8px}
   .sec-count{color:var(--faint);font-size:15px}
   .chev{color:var(--faint);display:inline-flex;align-self:center;transition:transform .15s}
   .sec.collapsed .chev{transform:rotate(-90deg)}
@@ -126,7 +126,7 @@
   .sheet.wide{max-width:600px}
   @media(min-width:640px){.overlay{align-items:center;padding:24px}.sheet{border-radius:18px}}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .sheet-head h2{font-size:28px;font-weight:400}
+  .sheet-head h2{font-size:24px;font-weight:400}
   .sheet-foot{display:flex;align-items:center;gap:10px;margin-top:6px}
   .grow{flex:1}
   .blk{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}
@@ -142,7 +142,7 @@
 
   .lock{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;padding:20px;z-index:100}
   .lock-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px}
-  .lock-title{font-size:44px;font-weight:400;line-height:1.1}
+  .lock-title{font-size:38px;font-weight:400;line-height:1.1}
 
   .sample{margin-top:28px;padding:18px;border:1.5px dashed var(--line2);border-radius:14px;color:var(--dim)}
   .sample .hand{font-size:24px;color:var(--ink)}
@@ -356,6 +356,7 @@ service cloud.firestore {
       <div id="cal-base-row">
         <label class="fld"><span>Worker URL</span><input id="cal-base" class="inp" placeholder="https://todo-calendar.yourname.workers.dev" autocapitalize="off" spellcheck="false"></label>
       </div>
+      <p id="cal-base-hint" class="hint" hidden></p>
       <details>
         <summary>Set up the free Cloudflare Worker (one time)</summary>
         <p>Calendar apps need a web address that serves an .ics file, and a static GitHub Pages site can't do that. A tiny free Cloudflare Worker reads the feed from Firestore and hands it to your calendar.</p>
@@ -363,7 +364,7 @@ service cloud.firestore {
           <li>Create a free account at dash.cloudflare.com.</li>
           <li>Open Workers &amp; Pages, create a new Worker, and name it (for example <code>todo-calendar</code>).</li>
           <li>Open its code editor, replace everything with the code below, and deploy.</li>
-          <li>Copy the address ending in <code>.workers.dev</code> into the Worker URL box above.</li>
+          <li>Copy the address ending in <code>.workers.dev</code> into the Worker URL box above. You only do this once: it's saved with your account.</li>
           <li>Add the <code>paperTodoCal</code> block to your Firestore rules (see the setup steps in the cloud settings).</li>
         </ol>
         <pre id="worker-code"></pre>
@@ -460,7 +461,7 @@ function normTask(t) {
     linkId: String(t.linkId || '')
   };
 }
-function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0 }; }
+function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0, base: c && /^https?:\/\/\S+$/.test(c.base || '') ? c.base.replace(/\/+$/, '') : '' }; }
 function normalizeState(s) {
   s = s || {};
   const cutoff = Date.now() - 30 * DAY;
@@ -471,7 +472,7 @@ function normalizeState(s) {
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).filter(t => t && typeof t === 'object').map(normTask).filter(t => !t.deleted || t.updatedAt > cutoff)
   };
 }
-const emptyState = () => ({ title: 'TODO', titleAt: 0, cal: { token: '', at: 0 }, tasks: [] });
+const emptyState = () => ({ title: 'TODO', titleAt: 0, cal: { token: '', at: 0, base: '' }, tasks: [] });
 const find = id => state.tasks.find(t => t.id === id && !t.deleted);
 const touch = t => { t.updatedAt = Date.now(); };
 function canonTag(tag) {
@@ -491,7 +492,7 @@ function mergeStates(a, b) {
   return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, tasks: [...map.values()] };
 }
 const canon = s => JSON.stringify({
-  t: s.title, a: s.titleAt, c: s.cal.token + '|' + s.cal.at,
+  t: s.title, a: s.titleAt, c: s.cal.token + '|' + s.cal.at + '|' + s.cal.base,
   k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(t => JSON.stringify(t, Object.keys(t).sort()))
 });
 
@@ -612,7 +613,7 @@ async function onRemote(snap) {
   }
   sync.blocked = false;
   const merged = mergeStates(state, remote), cm = canon(merged);
-  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); }
+  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); if (!$('#m-cal').hidden) refreshCal(); }
   if (cm !== canon(remote)) schedulePush(0); else setStatus('synced');
 }
 function schedulePush(delay = 800) { if (!sync.ref) return; clearTimeout(sync.pushT); sync.pushT = setTimeout(pushNow, delay); }
@@ -1005,7 +1006,7 @@ const fileFeedBase = () => {
   try { if (typeof CALENDAR_FEED_URL !== 'undefined') b = CALENDAR_FEED_URL; } catch {}
   return String(b || window.CALENDAR_FEED_URL || '').trim().replace(/\/+$/, '');
 };
-const feedBase = () => fileFeedBase() || String(settings.feedBase || '').trim().replace(/\/+$/, '');
+const feedBase = () => fileFeedBase() || state.cal.base || String(settings.feedBase || '').trim().replace(/\/+$/, '');
 function workerCode() {
   const c = getCfg() || {};
   return String.raw`const PROJECT_ID = '${c.projectId || 'YOUR_PROJECT_ID'}';
@@ -1031,7 +1032,11 @@ function refreshCal() {
   $('#cal-off').hidden = on; $('#cal-on').hidden = !on;
   $('#cal-need').textContent = sync.db ? '' : 'Calendar feeds need cloud sync. Connect it in the cloud settings first.';
   $('#cal-base-row').hidden = fromFile;
-  if (!fromFile) $('#cal-base').value = settings.feedBase || '';
+  if (!fromFile) $('#cal-base').value = state.cal.base || settings.feedBase || '';
+  const bh = $('#cal-base-hint');
+  bh.hidden = !base;
+  bh.textContent = fromFile ? 'Worker URL loaded from firebase-config.js.'
+    : base ? `Saved with your account, so your other devices have it too. To keep it in your repo as well, add this line to firebase-config.js: const CALENDAR_FEED_URL = "${base}";` : '';
   $('#worker-code').textContent = workerCode();
   if (!on) return;
   const n = feedItems().length;
@@ -1045,7 +1050,7 @@ function refreshCal() {
     : (base ? '' : 'Add your Worker URL below to get the subscribe links.');
 }
 function openCal() { if (!state) return; refreshCal(); openModal('m-cal'); }
-function newFeedToken() { deleteFeedDoc(state.cal.token); state.cal = { token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); }
+function newFeedToken() { deleteFeedDoc(state.cal.token); state.cal = { ...state.cal, token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); }
 function copyText(text) {
   const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Copied.'); } catch { toast('Could not copy. Select the text and copy it by hand.'); } ta.remove(); };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied.'), fallback); else fallback();
@@ -1099,9 +1104,9 @@ document.addEventListener('click', async e => {
     case 'open-cal': openCal(); break;
     case 'allday': setAllDay(el.dataset.val === '1'); break;
     case 'open-link': openTask(el.dataset.link); break;
-    case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
+    case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { ...state.cal, token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
     case 'cal-regen': if (confirm('Make a new link? Calendars subscribed to the old link will stop updating.')) newFeedToken(); break;
-    case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { token: '', at: Date.now() }; commit(); refreshCal(); } break;
+    case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { ...state.cal, token: '', at: Date.now() }; commit(); refreshCal(); } break;
     case 'copy': { const tgt = $('#' + el.dataset.target); copyText('value' in tgt ? tgt.value : tgt.textContent); break; }
     case 'reset-local': if (confirm("Erase this device's copy? Encrypted data in the cloud (if you sync) is not affected.")) { localStorage.removeItem(KEY); location.reload(); } break;
   }
@@ -1110,7 +1115,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModals();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.row-body')) { e.preventDefault(); e.target.click(); }
 });
-$('#cal-base').addEventListener('change', e => { settings.feedBase = e.target.value.trim(); saveSettings(); refreshCal(); });
+$('#cal-base').addEventListener('change', e => {
+  const v = e.target.value.trim().replace(/\/+$/, '');
+  if (v && !/^https?:\/\/\S+$/.test(v)) { toast('Enter the full Worker address, starting with https://'); return; }
+  state.cal = { ...state.cal, base: v, at: Date.now() }; settings.feedBase = ''; saveSettings(); commit(); refreshCal();
+});
 $('#f-link').addEventListener('change', updateLinkUI);
 $('#title').addEventListener('blur', e => { if (state && !e.target.value.trim()) { e.target.value = 'TODO'; state.title = 'TODO'; state.titleAt = Date.now(); document.title = 'TODO'; save(); } });
 $('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
