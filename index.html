@@ -261,6 +261,7 @@
           <input id="sy-id" class="inp" placeholder="Account ID (8–64 letters, numbers, - or _)" aria-label="Account ID" autocomplete="off" autocapitalize="off" spellcheck="false">
           <button type="button" class="btn" data-action="gen-id">Generate</button>
         </div>
+        <p id="cfg-note" class="hint" hidden>Firebase config loaded from <code>firebase-config.js</code>. You only need the account ID.</p>
         <textarea id="sy-cfg" class="inp" rows="6" placeholder='Paste your firebaseConfig here, e.g.&#10;{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }' aria-label="Firebase config" spellcheck="false" autocapitalize="off"></textarea>
         <div class="row-btns">
           <button type="button" class="btn primary" data-action="connect">Connect &amp; sync</button>
@@ -273,7 +274,8 @@
         <ol>
           <li>In the Firebase console, create a project and add a Firestore database.</li>
           <li>Open Project settings, add a Web app, and copy its <code>firebaseConfig</code>.</li>
-          <li>Paste it above, pick a long account ID, and use the same two values on every device.</li>
+          <li>Save it in <code>firebase-config.js</code> next to <code>index.html</code> (or paste it above if you have no such file).</li>
+          <li>Pick a long account ID and use the same one on every device.</li>
           <li>In Firestore Rules, allow the <code>paperTodo</code> collection:</li>
         </ol>
 <pre>rules_version = '2';
@@ -301,6 +303,7 @@ service cloud.firestore {
 
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="firebase-config.js"></script>
 <script>
 (() => {
 'use strict';
@@ -486,6 +489,14 @@ function parseCfg(txt) {
   for (const m of txt.matchAll(/["']?([A-Za-z]\w*)["']?\s*:\s*["']([^"']*)["']/g)) o[m[1]] = m[2];
   return o.apiKey && o.projectId ? o : null;
 }
+/* Config comes from firebase-config.js (a pasted "const firebaseConfig = {...}" block) when present. */
+function fileCfg() {
+  let c = null;
+  try { if (typeof firebaseConfig !== 'undefined') c = firebaseConfig; } catch {}
+  c = c || window.FIREBASE_CONFIG;
+  return c && typeof c === 'object' && c.apiKey && c.projectId && !/^(PASTE|YOUR_)/i.test(c.apiKey) ? c : null;
+}
+const getCfg = () => fileCfg() || settings.cfg;
 function teardownSync() {
   clearTimeout(sync.pushT);
   if (sync.unsub) { try { sync.unsub(); } catch {} }
@@ -493,11 +504,11 @@ function teardownSync() {
   if (a) a.delete().catch(() => {});
 }
 async function connectSync() {
-  if (!settings.cfg || !settings.accountId || !state) return;
+  if (!getCfg() || !settings.accountId || !state) return;
   teardownSync(); sync.blocked = false; setStatus('connecting');
   try {
     await loadFirebase();
-    sync.app = firebase.initializeApp(settings.cfg, 'todo-' + Date.now());
+    sync.app = firebase.initializeApp(getCfg(), 'todo-' + Date.now());
     sync.ref = sync.app.firestore().collection('paperTodo').doc(settings.accountId);
     sync.unsub = sync.ref.onSnapshot(onRemote, err => setStatus('error', err.message));
   } catch (e) { setStatus('error', e.message); }
@@ -767,6 +778,7 @@ function refreshLockUI() {
 function openSync() {
   $('#sy-id').value = settings.accountId || ''; $('#sy-cfg').value = settings.cfgText || '';
   $('#lk-pass').value = ''; $('#lk-pass2').value = '';
+  const fc = !!fileCfg(); $('#cfg-note').hidden = !fc; $('#sy-cfg').hidden = fc;
   refreshLockUI(); paintStatus(); openModal('m-sync');
 }
 
@@ -810,11 +822,11 @@ async function tryUnlock() {
 
 /* ---------- sync controls ---------- */
 async function doConnect() {
-  const id = $('#sy-id').value.trim(), cfg = parseCfg($('#sy-cfg').value);
+  const id = $('#sy-id').value.trim(), cfg = fileCfg() || parseCfg($('#sy-cfg').value);
   if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) return toast('Account ID needs 8–64 letters, numbers, - or _.');
-  if (!cfg) return toast('Paste the firebaseConfig from your Firebase web app. It needs apiKey and projectId.');
+  if (!cfg) return toast('No Firebase config found. Add it to firebase-config.js, or paste it into the box.');
   if (!session.pass && !confirm('The passphrase lock is off, so your tasks will be stored unencrypted in Firestore. Connect anyway?')) return;
-  Object.assign(settings, { accountId: id, cfg, cfgText: $('#sy-cfg').value, sync: true }); saveSettings();
+  Object.assign(settings, { accountId: id, cfg, cfgText: fileCfg() ? '' : $('#sy-cfg').value, sync: true }); saveSettings();
   await connectSync();
 }
 function disconnect() { teardownSync(); settings.sync = false; saveSettings(); setStatus('off'); }
