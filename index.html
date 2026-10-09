@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#181818">
-<title>TODO school</title>
+<title>TODO</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Patrick+Hand&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
 <style>
@@ -29,13 +29,13 @@
   html{background:var(--bg)}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
   body.modal-open{overflow:hidden}
-  .hand{font-family:'Kalam','Segoe Print','Bradley Hand','Comic Sans MS',cursive}
+  .hand{font-family:'Patrick Hand','Segoe Print','Bradley Hand','Comic Sans MS',cursive;font-weight:400}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 
   .wrap{max-width:760px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right)) calc(72px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 
   /* ---------- header ---------- */
-  #title{flex:1;min-width:0;background:transparent;border:0;border-bottom:1.5px dashed transparent;border-radius:0;color:var(--ink);font:700 clamp(30px,7vw,44px)/1.2 'Kalam','Segoe Print','Bradley Hand',cursive;padding:2px 0;outline:none}
+  #title{flex:1;min-width:0;background:transparent;border:0;border-bottom:1.5px dashed transparent;border-radius:0;color:var(--ink);font:400 clamp(36px,8vw,52px)/1.15 'Patrick Hand','Segoe Print','Bradley Hand',cursive;padding:2px 0;outline:none}
   #title:hover{border-bottom-color:var(--line2)}
   #title:focus{border-bottom-color:var(--accent)}
   .icon-btn{position:relative;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--dim);flex:none}
@@ -61,7 +61,7 @@
   .sec{margin-top:34px}
   .sec-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--line2)}
   .sec-toggle{display:flex;align-items:baseline;gap:10px;flex:1;min-height:48px;text-align:left}
-  .sec-name{font-size:28px;font-weight:700;line-height:1.1;display:inline-flex;align-items:center;gap:8px}
+  .sec-name{font-size:32px;font-weight:400;line-height:1.1;display:inline-flex;align-items:center;gap:8px}
   .sec-count{color:var(--faint);font-size:15px}
   .chev{color:var(--faint);display:inline-flex;align-self:center;transition:transform .15s}
   .sec.collapsed .chev{transform:rotate(-90deg)}
@@ -75,6 +75,7 @@
   .gap.today{border-bottom-color:var(--accent)}
   .gap-run{height:30px;border-bottom:1px dashed var(--line2);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12.5px}
   .btn.sm{min-height:36px;padding:0 13px;font-size:14px}
+  .pill .ell{max-width:170px;overflow:hidden;text-overflow:ellipsis}
   a.btn{text-decoration:none}
   .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:6px;color:var(--ink);font-size:15.5px;cursor:pointer}
   .chk input{width:22px;height:22px;accent-color:var(--accent);flex:none}
@@ -125,7 +126,7 @@
   .sheet.wide{max-width:600px}
   @media(min-width:640px){.overlay{align-items:center;padding:24px}.sheet{border-radius:18px}}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .sheet-head h2{font-size:24px;font-weight:700}
+  .sheet-head h2{font-size:28px;font-weight:400}
   .sheet-foot{display:flex;align-items:center;gap:10px;margin-top:6px}
   .grow{flex:1}
   .blk{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}
@@ -141,7 +142,7 @@
 
   .lock{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;padding:20px;z-index:100}
   .lock-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px}
-  .lock-title{font-size:40px;font-weight:700;line-height:1.1}
+  .lock-title{font-size:44px;font-weight:400;line-height:1.1}
 
   .sample{margin-top:28px;padding:18px;border:1.5px dashed var(--line2);border-radius:14px;color:var(--dim)}
   .sample .hand{font-size:24px;color:var(--ink)}
@@ -222,6 +223,21 @@
       <label class="fld"><span id="lbl-todo">To-do date</span><input id="f-todo" type="date"></label>
       <label class="fld"><span>Due date</span><input id="f-due" type="date"></label>
     </div>
+    <div id="time-block" hidden>
+      <div class="fld"><span>Time</span>
+        <div class="seg" role="group" aria-label="Reminder time" style="align-self:flex-start">
+          <button type="button" data-action="allday" data-val="1" aria-pressed="true">All day</button>
+          <button type="button" data-action="allday" data-val="0" aria-pressed="false">Time block</button>
+        </div>
+      </div>
+      <div class="grid2" id="time-inputs" hidden>
+        <label class="fld"><span>Start</span><input id="f-start" type="time"></label>
+        <label class="fld"><span>End</span><input id="f-end" type="time"></label>
+      </div>
+    </div>
+    <label class="fld" id="link-row"><span>Linked reminder</span><select id="f-link"><option value="">None</option></select></label>
+    <p class="hint" id="link-hint" hidden>Linked tasks stay off your calendar. The reminder shows there instead, with this task listed in its details.</p>
+    <p class="hint" id="linked-tasks" hidden></p>
     <label class="chk"><input type="checkbox" id="f-cal"><span>Show on my calendar feed</span></label>
     <p class="hint">The to-do date is when you plan to work on it. The due date is the official deadline. Adding a to-do date to an unorganized task schedules it.</p>
     <div class="sheet-foot">
@@ -316,7 +332,7 @@ service cloud.firestore {
       <h2 id="cal-h" class="hand">Calendar</h2>
       <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
     </div>
-    <p class="hint">Tick "Show on my calendar feed" on the tasks you want, then subscribe once on your phone. Their to-do and due dates appear as all-day events, and completed tasks drop off.</p>
+    <p class="hint">Tick "Show on my calendar feed" on the items you want, then subscribe once on your phone. Tasks appear as all-day events on their to-do and due dates. Reminders can be all-day or a time block. A task linked to a reminder stays off the calendar and the reminder shows instead. Completed items drop off.</p>
     <div id="cal-off">
       <p id="cal-need" class="hint"></p>
       <button type="button" class="btn primary" data-action="cal-on">Turn on calendar feed</button>
@@ -384,7 +400,9 @@ const P = {
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
-  chev: '<path d="m6 9 6 6 6-6"/>'
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
 };
 const ic = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 
@@ -395,6 +413,9 @@ const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Dat
 const todayStr = () => ymd(new Date());
 const diffDays = (a, b) => Math.round((parseD(a) - parseD(b)) / DAY); // a - b
 const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
+const validTime = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(s || '') ? s : '';
+const fmtTime = hm => { const [h, m] = hm.split(':').map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+const addMin = (hm, n) => { const [h, m] = hm.split(':').map(Number), t = Math.min(h * 60 + m + n, 23 * 60 + 59); return pad(Math.floor(t / 60)) + ':' + pad(t % 60); };
 function fmt(s) {
   const d = parseD(s), n = new Date();
   return d.toLocaleDateString(undefined, d.getFullYear() === n.getFullYear()
@@ -432,7 +453,11 @@ function normTask(t) {
     createdAt: +t.createdAt || Date.now(),
     updatedAt: +t.updatedAt || Date.now(),
     completedAt: +t.completedAt || null,
-    cal: !!t.cal
+    cal: !!t.cal,
+    allDay: t.allDay !== false,
+    startTime: validTime(t.startTime),
+    endTime: validTime(t.endTime),
+    linkId: String(t.linkId || '')
   };
 }
 function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0 }; }
@@ -440,13 +465,13 @@ function normalizeState(s) {
   s = s || {};
   const cutoff = Date.now() - 30 * DAY;
   return {
-    title: typeof s.title === 'string' ? s.title : 'TODO school',
+    title: typeof s.title === 'string' ? (s.title === 'TODO school' && !s.titleAt ? 'TODO' : s.title) : 'TODO',
     titleAt: +s.titleAt || 0,
     cal: normCal(s.cal),
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).filter(t => t && typeof t === 'object').map(normTask).filter(t => !t.deleted || t.updatedAt > cutoff)
   };
 }
-const emptyState = () => ({ title: 'TODO school', titleAt: 0, cal: { token: '', at: 0 }, tasks: [] });
+const emptyState = () => ({ title: 'TODO', titleAt: 0, cal: { token: '', at: 0 }, tasks: [] });
 const find = id => state.tasks.find(t => t.id === id && !t.deleted);
 const touch = t => { t.updatedAt = Date.now(); };
 function canonTag(tag) {
@@ -618,7 +643,7 @@ function sectionOf(t) {
   return 'todo';
 }
 const actDate = t => [t.todoDate, t.dueDate].filter(Boolean).sort()[0] || '';
-const byUrgency = (a, b) => (actDate(a) || '9999-12-31').localeCompare(actDate(b) || '9999-12-31') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt - b.createdAt;
+const byUrgency = (a, b) => (actDate(a) || '9999-12-31').localeCompare(actDate(b) || '9999-12-31') || (a.startTime || '').localeCompare(b.startTime || '') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt - b.createdAt;
 
 /* Deadline = due date, or the to-do date when there is no due date. Past it → overdue; today/tomorrow → soon. */
 function urgency(t) {
@@ -686,6 +711,7 @@ function rowHTML(t, showTag, secId) {
     const cls = done ? '' : t.dueDate ? (d < 0 ? 'amber' : '') : ucls;
     meta += `<span class="pill ${cls}" title="${t.kind === 'reminder' ? 'Reminder date' : 'Planned work date'}">${ic('cal', 12)}${txt}</span>`;
   }
+  if (t.kind === 'reminder' && !t.allDay && t.startTime && t.endTime) meta += `<span class="pill" title="Time block">${ic('clock', 12)}${fmtTime(t.startTime)} – ${fmtTime(t.endTime)}</span>`;
   if (t.dueDate) {
     const d = diffDays(t.dueDate, today);
     const txt = done ? `Due ${fmt(t.dueDate)}` : d < 0 ? `${-d}d overdue` : d === 0 ? 'Due today' : d === 1 ? 'Due tomorrow' : `Due ${fmt(t.dueDate)}`;
@@ -696,8 +722,11 @@ function rowHTML(t, showTag, secId) {
     const txt = g > 0 ? `${g}d buffer` : g === 0 ? 'Same-day' : `${-g}d after due`;
     meta += `<span class="pill ${g < 0 ? 'red' : ''}" title="Gap between your to-do date and the due date">${txt}</span>`;
   }
+  const lr = t.linkId ? find(t.linkId) : null;
+  if (lr && lr.kind === 'reminder') meta += `<button type="button" class="pill" data-action="open-link" data-link="${esc(lr.id)}" title="Linked reminder">${ic('link', 12)}<span class="ell">${esc(lr.title)}</span></button>`;
+  if (t.kind === 'reminder') { const n = state.tasks.filter(x => !x.deleted && x.linkId === t.id).length; if (n) meta += `<span class="pill" title="Tasks linked to this reminder">${ic('link', 12)}${n} linked</span>`; }
   if (secId === 'todo') meta += `<button type="button" class="pill ${t.status === 'progress' ? 'accent' : ''}" data-action="cycle" title="Change status">${t.status === 'progress' ? 'In progress' : 'Scheduled'}</button>`;
-  if (t.cal && !done && (t.todoDate || t.dueDate)) meta += `<button type="button" class="pill accent" data-action="uncal" title="Remove from calendar feed">${ic('cal', 12)}On calendar</button>`;
+  if (t.cal && !done && (t.todoDate || t.dueDate) && !taskSuppressed(t)) meta += `<button type="button" class="pill accent" data-action="uncal" title="Remove from calendar feed">${ic('cal', 12)}On calendar</button>`;
   if (done && t.completedAt) meta += `<span class="pill">Done ${fmt(ymd(new Date(t.completedAt)))}</span>`;
   return `<li class="row ${done ? 'done' : ''} ${u === 'overdue' ? 'overdue' : ''} ${u === 'soon' ? 'soon' : ''} ${lastToggled === t.id ? 'just' : ''}" data-id="${esc(t.id)}">
     <button type="button" class="check" data-action="toggle" aria-pressed="${done}" aria-label="${done ? 'Mark not done' : 'Mark done'}: ${esc(t.title)}"><span class="box">${done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="24" d="M20 6 9 17l-5-5"/></svg>' : ''}</span></button>
@@ -768,6 +797,7 @@ function toggleDone(id) {
   touch(t); commit();
 }
 function deleteTask(id) {
+  state.tasks.forEach(x => { if (x.linkId === id) { x.linkId = ''; touch(x); } });
   const i = state.tasks.findIndex(t => t.id === id);
   if (i > -1) state.tasks[i] = { id, deleted: true, updatedAt: Date.now() };
 }
@@ -782,12 +812,13 @@ function clearCompleted() {
 function addSamples() {
   const add = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
   [
-    { title: 'MTE502 Lab 3 Code', notes: 'Add X and Y value outputs', tag: 'MTE502', status: 'progress', todoDate: add(0), dueDate: add(3) },
+    { title: 'MTE502 Lab 3 Code', notes: 'Add X and Y value outputs', tag: 'MTE502', status: 'progress', todoDate: add(0), dueDate: add(3), cal: true },
     { title: 'MEC713 problem set 4', tag: 'MEC713', status: 'scheduled', todoDate: add(1), dueDate: add(1) },
     { title: 'EES612 reading notes', tag: 'EES612', status: 'scheduled', todoDate: add(-3), dueDate: add(-1) },
     { title: 'Update résumé for Co-Op postings', tag: 'Co-Op', status: 'unorganized' },
-    { title: 'Renew transit pass', kind: 'reminder', status: 'scheduled', tag: 'Personal', todoDate: add(14) }
-  ].forEach(o => state.tasks.push(normTask(o)));
+    { title: 'Renew transit pass', kind: 'reminder', status: 'scheduled', tag: 'Personal', todoDate: add(14) },
+    { title: 'Lab 3 work session', kind: 'reminder', status: 'scheduled', tag: 'MTE502', todoDate: add(1), allDay: false, startTime: '14:00', endTime: '16:00', cal: true }
+  ].map(o => normTask(o)).forEach((t, i, all) => { if (i === 0) t.linkId = all[5].id; state.tasks.push(t); });
   commit();
 }
 
@@ -796,19 +827,40 @@ function addSamples() {
    ===================================================================== */
 const openModal = id => { $('#' + id).hidden = false; document.body.classList.add('modal-open'); };
 function closeModals() { $$('.overlay').forEach(o => o.hidden = true); document.body.classList.remove('modal-open'); }
+let formAllDay = true;
+function setAllDay(v) {
+  formAllDay = v;
+  $$('[data-action=allday]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.val === '1') === v)));
+  $('#time-inputs').hidden = v;
+}
+function updateLinkUI() {
+  const linked = formKind === 'task' && !!$('#f-link').value;
+  $('#link-hint').hidden = !linked; $('#f-cal').disabled = linked;
+}
+function fillLinkOptions(current) {
+  const rs = state.tasks.filter(r => !r.deleted && r.kind === 'reminder' && (r.status !== 'completed' || r.id === current)).sort(byUrgency);
+  $('#f-link').innerHTML = '<option value="">None</option>' + rs.map(r => `<option value="${esc(r.id)}">${esc(r.title)}${r.todoDate ? ' (' + esc(fmt(r.todoDate)) + ')' : ''}</option>`).join('');
+  $('#f-link').value = current || '';
+}
 function setKind(k) {
   formKind = k;
+  $('#time-block').hidden = k !== 'reminder'; $('#link-row').hidden = k === 'reminder';
   $$('[data-action=kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === k)));
   $('#lbl-todo').textContent = k === 'reminder' ? 'Reminder date' : 'To-do date';
+  updateLinkUI();
 }
 function openTask(id, preset) {
   editingId = id || null;
   const t = id ? find(id) : null;
-  const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', status: 'unorganized', ...(preset || {}) };
+  const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', status: 'unorganized', allDay: true, startTime: '', endTime: '', linkId: '', ...(preset || {}) };
   $('#task-heading').textContent = t ? 'Edit ' + (p.kind === 'reminder' ? 'reminder' : 'task') : (p.kind === 'reminder' ? 'New reminder' : 'New task');
   $('#f-title').value = p.title; $('#f-notes').value = p.notes; $('#f-tag').value = p.tag || '';
   $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-status').value = p.status; $('#f-cal').checked = !!p.cal;
   $('#btn-del').hidden = !t;
+  $('#f-start').value = p.startTime || ''; $('#f-end').value = p.endTime || '';
+  fillLinkOptions(p.linkId); setAllDay(p.allDay !== false);
+  const lt = t && p.kind === 'reminder' ? state.tasks.filter(x => !x.deleted && x.linkId === t.id) : [];
+  $('#linked-tasks').hidden = !lt.length; $('#linked-tasks').textContent = lt.length ? 'Linked tasks: ' + lt.map(x => x.title).join(', ') : '';
   setKind(p.kind);
   openModal('m-task');
   setTimeout(() => $('#f-title').focus(), 30);
@@ -816,7 +868,16 @@ function openTask(id, preset) {
 function saveTask() {
   const title = $('#f-title').value.trim();
   if (!title) { $('#f-title').focus(); toast('Give the task a title.'); return; }
+  let startTime = '', endTime = '';
+  if (formKind === 'reminder' && !formAllDay) {
+    startTime = $('#f-start').value; endTime = $('#f-end').value;
+    if (!$('#f-todo').value) { toast('Pick a reminder date for a time block.'); return; }
+    if (!startTime) { toast('Add a start time, or switch to all day.'); return; }
+    if (!endTime) endTime = addMin(startTime, 60);
+    if (endTime <= startTime) { toast('The end time must be after the start time.'); return; }
+  }
   const v = {
+    allDay: formKind === 'reminder' ? formAllDay : true, startTime, endTime, linkId: formKind === 'task' ? $('#f-link').value : '',
     title, notes: $('#f-notes').value.trim(), tag: canonTag($('#f-tag').value.trim()), kind: formKind,
     todoDate: $('#f-todo').value, dueDate: $('#f-due').value, status: $('#f-status').value, cal: $('#f-cal').checked
   };
@@ -827,6 +888,7 @@ function saveTask() {
     Object.assign(t, v);
     if (v.status === 'completed' && was !== 'completed') { t.completedAt = Date.now(); t.prevStatus = was; }
     if (v.status !== 'completed' && was === 'completed') t.completedAt = null;
+    if (v.kind === 'task') state.tasks.forEach(x => { if (x.linkId === t.id) { x.linkId = ''; touch(x); } });
     touch(t);
   } else {
     state.tasks.push(normTask({ ...v, completedAt: v.status === 'completed' ? Date.now() : null }));
@@ -903,23 +965,30 @@ function icsFold(line) {
   for (let i = 60; i < c.length; i += 58) out.push(' ' + c.slice(i, i + 58).join(''));
   return out.join('\r\n');
 }
-const feedItems = () => state.tasks.filter(t => !t.deleted && t.cal && t.status !== 'completed' && (t.todoDate || t.dueDate));
+/* A task linked to a live reminder is left off the calendar; the reminder stands in for it. */
+const taskSuppressed = t => { if (!t.linkId) return false; const r = find(t.linkId); return !!r && r.kind === 'reminder'; };
+const feedItems = () => state.tasks.filter(t => !t.deleted && t.cal && t.status !== 'completed' && (t.todoDate || t.dueDate) && !taskSuppressed(t));
 function buildICS() {
   const stamp = icsStamp(new Date());
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Paper Todo//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     'X-WR-CALNAME:' + icsText(state.title || 'Todo'), 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
   feedItems().forEach(t => {
-    const desc = [t.tag ? 'Tag: ' + t.tag : '', t.notes].filter(Boolean).join('\n');
-    const add = (d, prefix, suffix) => {
-      const next = parseD(d); next.setDate(next.getDate() + 1);
-      L.push('BEGIN:VEVENT', `UID:${t.id}-${suffix}@paper-todo`, `DTSTAMP:${stamp}`,
-        `DTSTART;VALUE=DATE:${d.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${ymd(next).replace(/-/g, '')}`,
-        `SUMMARY:${icsText(prefix + t.title)}`);
+    const linked = t.kind === 'reminder' ? state.tasks.filter(x => !x.deleted && x.linkId === t.id && x.status !== 'completed') : [];
+    const desc = [t.tag ? 'Tag: ' + t.tag : '', t.notes,
+      linked.length ? 'Linked tasks:\n' + linked.map(x => '- ' + x.title + (x.dueDate ? ' (due ' + fmt(x.dueDate) + ')' : '')).join('\n') : ''
+    ].filter(Boolean).join('\n');
+    const timed = t.kind === 'reminder' && !t.allDay && !!t.startTime && !!t.endTime && !!t.todoDate;
+    const add = (d, prefix, suffix, isTimed) => {
+      const d8 = d.replace(/-/g, '');
+      L.push('BEGIN:VEVENT', `UID:${t.id}-${suffix}@paper-todo`, `DTSTAMP:${stamp}`);
+      if (isTimed) L.push(`DTSTART:${d8}T${t.startTime.replace(':', '')}00`, `DTEND:${d8}T${t.endTime.replace(':', '')}00`);
+      else { const next = parseD(d); next.setDate(next.getDate() + 1); L.push(`DTSTART;VALUE=DATE:${d8}`, `DTEND;VALUE=DATE:${ymd(next).replace(/-/g, '')}`); }
+      L.push(`SUMMARY:${icsText(prefix + t.title)}`);
       if (desc) L.push('DESCRIPTION:' + icsText(desc));
-      L.push('TRANSP:TRANSPARENT', 'END:VEVENT');
+      L.push(isTimed ? 'TRANSP:OPAQUE' : 'TRANSP:TRANSPARENT', 'END:VEVENT');
     };
-    if (t.todoDate && t.todoDate !== t.dueDate) add(t.todoDate, t.kind === 'reminder' ? '' : 'Do: ', 'do');
-    if (t.dueDate) add(t.dueDate, 'Due: ', 'due');
+    if (t.todoDate && (timed || t.todoDate !== t.dueDate)) add(t.todoDate, t.kind === 'reminder' ? '' : 'Do: ', 'do', timed);
+    if (t.dueDate) add(t.dueDate, 'Due: ', 'due', false);
   });
   L.push('END:VCALENDAR');
   return L.map(icsFold).join('\r\n') + '\r\n';
@@ -1028,6 +1097,8 @@ document.addEventListener('click', async e => {
     case 'clear-done': clearCompleted(); break;
     case 'uncal': { const k = find(id); if (k) { k.cal = false; touch(k); commit(); } break; }
     case 'open-cal': openCal(); break;
+    case 'allday': setAllDay(el.dataset.val === '1'); break;
+    case 'open-link': openTask(el.dataset.link); break;
     case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
     case 'cal-regen': if (confirm('Make a new link? Calendars subscribed to the old link will stop updating.')) newFeedToken(); break;
     case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { token: '', at: Date.now() }; commit(); refreshCal(); } break;
@@ -1040,6 +1111,8 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.row-body')) { e.preventDefault(); e.target.click(); }
 });
 $('#cal-base').addEventListener('change', e => { settings.feedBase = e.target.value.trim(); saveSettings(); refreshCal(); });
+$('#f-link').addEventListener('change', updateLinkUI);
+$('#title').addEventListener('blur', e => { if (state && !e.target.value.trim()) { e.target.value = 'TODO'; state.title = 'TODO'; state.titleAt = Date.now(); document.title = 'TODO'; save(); } });
 $('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
 $('#lock-form').addEventListener('submit', e => { e.preventDefault(); tryUnlock(); });
 $('#title').addEventListener('input', e => { state.title = e.target.value; state.titleAt = Date.now(); document.title = state.title || 'Todo'; save(); });
