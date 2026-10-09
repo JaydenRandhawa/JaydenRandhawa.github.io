@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#181818">
+<title>TODO school</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
+<style>
+  /* ---------- reset (Tailwind preflight is off; this file is self-sufficient) ---------- */
+  *,*::before,*::after{box-sizing:border-box}
+  h1,h2,h3,p,ul{margin:0;padding:0}
+  ul{list-style:none}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+
+  :root{
+    --bg:#181818; --raise:#1f1f1f; --line:#2b2b2b; --line2:#3a3a3a;
+    --ink:#EDEDED; --dim:#a3a3a3; --faint:#707070;
+    --accent:#A9BDF5; --red:#E5736F; --amber:#E8B84F; --green:#86C99F;
+    color-scheme:dark;
+  }
+  html{background:var(--bg)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  body.modal-open{overflow:hidden}
+  .hand{font-family:'Kalam','Segoe Print','Bradley Hand','Comic Sans MS',cursive}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  .wrap{max-width:760px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right)) calc(72px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+
+  /* ---------- header ---------- */
+  #title{flex:1;min-width:0;background:transparent;border:0;border-bottom:1.5px dashed transparent;border-radius:0;color:var(--ink);font:700 clamp(30px,7vw,44px)/1.2 'Kalam','Segoe Print','Bradley Hand',cursive;padding:2px 0;outline:none}
+  #title:hover{border-bottom-color:var(--line2)}
+  #title:focus{border-bottom-color:var(--accent)}
+  .icon-btn{position:relative;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--dim);flex:none}
+  .icon-btn:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+  .sdot{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:transparent;box-shadow:0 0 0 2px var(--bg)}
+  .sdot.ok{background:var(--green)} .sdot.busy{background:var(--amber)} .sdot.err{background:var(--red)}
+
+  .quick{display:flex;gap:8px;margin:18px 0 14px}
+  .inp,.fld input,.fld textarea,.fld select{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;color:var(--ink);font:inherit;font-size:16px;width:100%;min-width:0}
+  .quick .inp{background:var(--raise);flex:1}
+  .inp::placeholder,.fld ::placeholder{color:var(--faint)}
+
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:11px;padding:2px;flex:none}
+  .seg button{padding:6px 13px;min-height:36px;border-radius:9px;color:var(--dim);font-size:14.5px}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#181818;font-weight:500}
+  .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;padding:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;white-space:nowrap;padding:6px 12px;min-height:36px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);font-size:14.5px}
+  .chip[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+  @media(max-width:560px){.chips{flex-basis:100%}}
+
+  /* ---------- sections (paper-style) ---------- */
+  .sec{margin-top:34px}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--line2)}
+  .sec-toggle{display:flex;align-items:baseline;gap:10px;flex:1;min-height:48px;text-align:left}
+  .sec-name{font-size:28px;font-weight:700;line-height:1.1;display:inline-flex;align-items:center;gap:8px}
+  .sec-count{color:var(--faint);font-size:15px}
+  .chev{color:var(--faint);display:inline-flex;align-self:center;transition:transform .15s}
+  .sec.collapsed .chev{transform:rotate(-90deg)}
+  .empty{color:var(--faint);padding:14px 2px;font-size:15px}
+  .grp{display:flex;align-items:center;gap:8px;margin:18px 0 2px;font-size:15px;font-weight:600;color:var(--dim)}
+  .grp-n{color:var(--faint);font-weight:400}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+
+  /* ---------- rows ---------- */
+  .row{display:flex;align-items:flex-start;border-bottom:1px solid var(--line);padding-right:6px}
+  .row:hover{background:rgba(255,255,255,.025)}
+  .row.overdue{background:rgba(229,115,111,.08);box-shadow:inset 3px 0 0 rgba(229,115,111,.65)}
+  .row.soon{background:rgba(232,184,79,.07);box-shadow:inset 3px 0 0 rgba(232,184,79,.6)}
+  .check{width:46px;min-height:46px;display:grid;place-items:center;flex:none}
+  .box{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--faint);display:grid;place-items:center;color:#181818;transition:background .15s,border-color .15s}
+  .check:hover .box{border-color:var(--ink)}
+  .row.done .box{background:var(--green);border-color:var(--green)}
+  .box path{stroke-dasharray:24;stroke-dashoffset:0}
+  .row.just .box path{animation:draw .3s ease-out}
+  @keyframes draw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+  .row-body{flex:1;min-width:0;padding:11px 4px 11px 0;cursor:pointer}
+  .row-title{font-size:17px;line-height:1.35;overflow-wrap:anywhere}
+  .row.done .row-title{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--faint)}
+  .row-notes{color:var(--dim);font-size:14.5px;margin-top:2px;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+  .row.done .row-notes{color:var(--faint)}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;min-height:24px;border-radius:999px;font-size:13px;color:var(--dim);border:1px solid var(--line2);white-space:nowrap}
+  .pill.red{color:var(--red);border-color:rgba(229,115,111,.45);background:rgba(229,115,111,.1)}
+  .pill.amber{color:var(--amber);border-color:rgba(232,184,79,.45);background:rgba(232,184,79,.1)}
+  .pill.accent{color:var(--accent);border-color:rgba(169,189,245,.45)}
+  button.pill:hover{border-color:var(--ink);color:var(--ink)}
+
+  /* ---------- buttons & forms ---------- */
+  .btn{min-height:44px;padding:0 18px;border-radius:11px;border:1px solid var(--line2);color:var(--ink);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover{border-color:var(--dim)}
+  .btn.primary{background:var(--ink);color:#181818;border-color:var(--ink)}
+  .btn.primary:hover{background:#fff}
+  .btn.danger{color:var(--red)}
+  .link{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+  .fld{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;font-size:14px;color:var(--dim)}
+  .fld textarea{resize:vertical;min-height:84px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{color:var(--faint);font-size:13.5px;margin:0 0 12px}
+  .err{color:var(--red);font-size:14px;min-height:20px;margin:6px 0}
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .row-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+
+  /* ---------- modals ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:flex-end;justify-content:center;z-index:50;overflow-y:auto;overscroll-behavior:contain}
+  .sheet{background:var(--raise);width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow-y:auto;border:1px solid var(--line2);border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom))}
+  .sheet.wide{max-width:600px}
+  @media(min-width:640px){.overlay{align-items:center;padding:24px}.sheet{border-radius:18px}}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .sheet-head h2{font-size:24px;font-weight:700}
+  .sheet-foot{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .grow{flex:1}
+  .blk{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}
+  .blk h3{font-size:16px;font-weight:600;margin-bottom:6px}
+  .status{font-size:14px;color:var(--dim);margin:10px 0 0}
+  .status.synced{color:var(--green)} .status.error{color:var(--red)} .status.syncing,.status.connecting{color:var(--amber)}
+  details{margin-top:12px;font-size:14px;color:var(--dim)}
+  summary{cursor:pointer;color:var(--accent)}
+  details ol{padding-left:20px;margin:8px 0}
+  details li{margin-bottom:4px}
+  pre{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;overflow-x:auto;font-size:12.5px;color:var(--ink);margin:8px 0}
+  .inline{display:flex;gap:8px}
+
+  .lock{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;padding:20px;z-index:100}
+  .lock-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px}
+  .lock-title{font-size:40px;font-weight:700;line-height:1.1}
+
+  .sample{margin-top:28px;padding:18px;border:1.5px dashed var(--line2);border-radius:14px;color:var(--dim)}
+  .sample .hand{font-size:24px;color:var(--ink)}
+
+  #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:#181818;padding:10px 16px;border-radius:12px;font-size:14.5px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;max-width:90vw;text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Passphrase lock screen -->
+<div id="lock" class="lock" hidden>
+  <form id="lock-form" class="lock-card" autocomplete="off">
+    <div class="hand lock-title">Locked</div>
+    <p class="hint">Enter your passphrase to open your list.</p>
+    <input id="lk-input" type="password" class="inp" autocomplete="current-password" placeholder="Passphrase" aria-label="Passphrase">
+    <p id="lk-err" class="err" role="alert"></p>
+    <button class="btn primary" type="submit">Unlock</button>
+    <button type="button" class="link" data-action="reset-local">Forgot it? Erase this device's copy</button>
+  </form>
+</div>
+
+<div id="app" class="wrap" hidden>
+  <header class="flex items-start gap-3">
+    <input id="title" type="text" maxlength="80" aria-label="List title" placeholder="Name this list" spellcheck="false">
+    <div class="flex items-center">
+      <button id="btn-lock" class="icon-btn" data-action="lock-now" aria-label="Lock now" hidden><span data-ic="lock" data-s="20"></span></button>
+      <button id="btn-sync" class="icon-btn" data-action="open-sync" aria-label="Sync and privacy settings"><span data-ic="cloud" data-s="22"></span><span id="sync-dot" class="sdot"></span></button>
+    </div>
+  </header>
+
+  <form id="quick" class="quick" autocomplete="off">
+    <input id="q" class="inp" type="text" maxlength="200" enterkeyhint="done" placeholder="Brain-dump a task. Add #tag to label it." aria-label="New task">
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="seg" role="group" aria-label="Group tasks by">
+      <button type="button" data-action="view" data-val="category" aria-pressed="true">By tag</button>
+      <button type="button" data-action="view" data-val="date" aria-pressed="false">By urgency</button>
+    </div>
+    <div id="chips" class="chips" role="group" aria-label="Filter by tag"></div>
+  </div>
+
+  <main id="sections"></main>
+</div>
+
+<!-- Task modal -->
+<div id="m-task" class="overlay" hidden>
+  <form id="task-form" class="sheet" role="dialog" aria-modal="true" aria-labelledby="task-heading" autocomplete="off">
+    <div class="sheet-head">
+      <h2 id="task-heading" class="hand">New task</h2>
+      <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
+    </div>
+    <label class="fld"><span>Title</span><input id="f-title" maxlength="200" placeholder="MTE502 Lab 3 Code"></label>
+    <label class="fld"><span>Details</span><textarea id="f-notes" rows="3" placeholder="Add X and Y value outputs"></textarea></label>
+    <div class="grid2">
+      <label class="fld"><span>Tag</span><input id="f-tag" list="tag-list" maxlength="40" placeholder="MTE502"><datalist id="tag-list"></datalist></label>
+      <label class="fld"><span>Status</span>
+        <select id="f-status">
+          <option value="unorganized">Unorganized</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="progress">In progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </label>
+    </div>
+    <div class="fld"><span>Type</span>
+      <div class="seg" role="group" aria-label="Type" style="align-self:flex-start">
+        <button type="button" data-action="kind" data-val="task" aria-pressed="true">Task</button>
+        <button type="button" data-action="kind" data-val="reminder" aria-pressed="false">Reminder</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span id="lbl-todo">To-do date</span><input id="f-todo" type="date"></label>
+      <label class="fld"><span>Due date</span><input id="f-due" type="date"></label>
+    </div>
+    <p class="hint">The to-do date is when you plan to work on it. The due date is the official deadline. Adding a to-do date to an unorganized task schedules it.</p>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="btn-del" data-action="delete-task">Delete</button>
+      <span class="grow"></span>
+      <button type="button" class="btn" data-action="close">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Sync & privacy modal -->
+<div id="m-sync" class="overlay" hidden>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="sync-h">
+    <div class="sheet-head">
+      <h2 id="sync-h" class="hand">Sync &amp; privacy</h2>
+      <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
+    </div>
+
+    <section>
+      <h3>Passphrase lock</h3>
+      <p class="hint">Encrypts your tasks (AES-256) on this device and in the cloud. The passphrase is never saved. If you forget it, encrypted data can't be recovered.</p>
+      <div id="lock-off" class="stack">
+        <input id="lk-pass" type="password" class="inp" autocomplete="new-password" placeholder="New passphrase (6+ characters)" aria-label="New passphrase">
+        <input id="lk-pass2" type="password" class="inp" autocomplete="new-password" placeholder="Repeat passphrase" aria-label="Repeat passphrase">
+        <div class="row-btns"><button type="button" class="btn primary" data-action="enable-lock">Turn on lock</button></div>
+      </div>
+      <div id="lock-on" hidden>
+        <p class="status synced">The lock is on. You'll be asked for the passphrase each time you open the app.</p>
+        <div class="row-btns">
+          <button type="button" class="btn" data-action="lock-now">Lock now</button>
+          <button type="button" class="btn danger" data-action="disable-lock">Remove lock</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="blk">
+      <h3>Cloud sync (Firebase Firestore)</h3>
+      <p class="hint">Use the same account ID and config on your laptop, phone and iPad. Changes merge per task, so edits from different devices don't overwrite each other.</p>
+      <div class="stack">
+        <div class="inline">
+          <input id="sy-id" class="inp" placeholder="Account ID (8–64 letters, numbers, - or _)" aria-label="Account ID" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button type="button" class="btn" data-action="gen-id">Generate</button>
+        </div>
+        <textarea id="sy-cfg" class="inp" rows="6" placeholder='Paste your firebaseConfig here, e.g.&#10;{ apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }' aria-label="Firebase config" spellcheck="false" autocapitalize="off"></textarea>
+        <div class="row-btns">
+          <button type="button" class="btn primary" data-action="connect">Connect &amp; sync</button>
+          <button type="button" class="btn" data-action="disconnect">Disconnect</button>
+        </div>
+      </div>
+      <p id="sy-status" class="status" role="status">Not connected</p>
+      <details>
+        <summary>How to set this up</summary>
+        <ol>
+          <li>In the Firebase console, create a project and add a Firestore database.</li>
+          <li>Open Project settings, add a Web app, and copy its <code>firebaseConfig</code>.</li>
+          <li>Paste it above, pick a long account ID, and use the same two values on every device.</li>
+          <li>In Firestore Rules, allow the <code>paperTodo</code> collection:</li>
+        </ol>
+<pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /paperTodo/{accountId} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+        <p>These rules rely on the account ID acting like a secret, so keep it long and private, and turn on the passphrase lock so the stored data is encrypted.</p>
+      </details>
+    </section>
+
+    <section class="blk">
+      <h3>Backup</h3>
+      <div class="row-btns">
+        <button type="button" class="btn" data-action="export">Export JSON</button>
+        <button type="button" class="btn" data-action="import">Import JSON</button>
+        <input id="file" type="file" accept="application/json,.json" hidden>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   Helpers & constants
+   ===================================================================== */
+const KEY = 'paperTodo.data.v1', SKEY = 'paperTodo.settings.v1', DAY = 864e5;
+const FB_BASE = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+const genId = () => Array.from(crypto.getRandomValues(new Uint8Array(15)), b => b.toString(16).padStart(2, '0')).join('');
+const tagSort = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+const P = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>'
+};
+const ic = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+
+/* ---------- dates (stored as local YYYY-MM-DD strings) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => ymd(new Date());
+const diffDays = (a, b) => Math.round((parseD(a) - parseD(b)) / DAY); // a - b
+const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
+function fmt(s) {
+  const d = parseD(s), n = new Date();
+  return d.toLocaleDateString(undefined, d.getFullYear() === n.getFullYear()
+    ? { weekday: 'short', month: 'short', day: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* =====================================================================
+   State & settings
+   ===================================================================== */
+const DEFAULTS = { view: 'category', filterTag: '', collapsed: {}, accountId: '', cfg: null, cfgText: '', sync: false };
+let settings = { ...DEFAULTS };
+let state = null;                 // { title, titleAt, tasks:[] }  (tasks may include tombstones)
+let session = { pass: null, salt: null };
+let keyCache = new Map();
+let editingId = null, formKind = 'task', lastToggled = null, dayKey = todayStr();
+
+function loadSettings() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SKEY) || '{}') }; } catch { return { ...DEFAULTS }; } }
+function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {} }
+
+const STATUSES = ['unorganized', 'scheduled', 'progress', 'completed'];
+function normTask(t) {
+  const id = String(t.id || uid());
+  if (t.deleted) return { id, deleted: true, updatedAt: +t.updatedAt || Date.now() };
+  return {
+    id,
+    title: String(t.title || '').slice(0, 200),
+    notes: String(t.notes || ''),
+    tag: String(t.tag || '').trim(),
+    kind: t.kind === 'reminder' ? 'reminder' : 'task',
+    todoDate: validDate(t.todoDate),
+    dueDate: validDate(t.dueDate),
+    status: STATUSES.includes(t.status) ? t.status : 'unorganized',
+    prevStatus: STATUSES.includes(t.prevStatus) ? t.prevStatus : null,
+    createdAt: +t.createdAt || Date.now(),
+    updatedAt: +t.updatedAt || Date.now(),
+    completedAt: +t.completedAt || null
+  };
+}
+function normalizeState(s) {
+  s = s || {};
+  const cutoff = Date.now() - 30 * DAY;
+  return {
+    title: typeof s.title === 'string' ? s.title : 'TODO school',
+    titleAt: +s.titleAt || 0,
+    tasks: (Array.isArray(s.tasks) ? s.tasks : []).filter(t => t && typeof t === 'object').map(normTask).filter(t => !t.deleted || t.updatedAt > cutoff)
+  };
+}
+const emptyState = () => ({ title: 'TODO school', titleAt: 0, tasks: [] });
+const find = id => state.tasks.find(t => t.id === id && !t.deleted);
+const touch = t => { t.updatedAt = Date.now(); };
+function canonTag(tag) {
+  if (!tag) return '';
+  const hit = state.tasks.find(t => !t.deleted && t.tag && t.tag.toLowerCase() === tag.toLowerCase());
+  return hit ? hit.tag : tag;
+}
+
+/* Per-task last-write-wins merge. Deleted tasks stay as tombstones for 30 days. */
+function mergeStates(a, b) {
+  const map = new Map();
+  for (const t of [...a.tasks, ...b.tasks]) {
+    const c = map.get(t.id);
+    if (!c || t.updatedAt > c.updatedAt) map.set(t.id, t);
+  }
+  const useB = (b.titleAt || 0) > (a.titleAt || 0);
+  return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, tasks: [...map.values()] };
+}
+const canon = s => JSON.stringify({
+  t: s.title, a: s.titleAt,
+  k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(t => JSON.stringify(t, Object.keys(t).sort()))
+});
+
+/* =====================================================================
+   Encryption (AES-GCM, key from PBKDF2). Passphrase lives in memory only.
+   ===================================================================== */
+const enc = new TextEncoder(), dec = new TextDecoder();
+function toB64(buf) { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+function fromB64(s) { const r = atob(s), b = new Uint8Array(r.length); for (let i = 0; i < r.length; i++) b[i] = r.charCodeAt(i); return b; }
+async function keyFor(saltB64) {
+  if (keyCache.has(saltB64)) return keyCache.get(saltB64);
+  const km = await crypto.subtle.importKey('raw', enc.encode(session.pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: fromB64(saltB64), iterations: 250000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  keyCache.set(saltB64, key);
+  return key;
+}
+async function seal(st) {
+  if (!session.pass) return { v: 1, enc: false, data: st };
+  const key = await keyFor(session.salt);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(st)));
+  return { v: 1, enc: true, salt: session.salt, iv: toB64(iv), ct: toB64(ct) };
+}
+async function openEnv(env) {
+  if (!env.enc) return env.data;
+  if (!session.pass) throw new Error('LOCKED');
+  try {
+    const key = await keyFor(env.salt);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(env.iv) }, key, fromB64(env.ct));
+    return JSON.parse(dec.decode(pt));
+  } catch { throw new Error('BADPASS'); }
+}
+
+/* =====================================================================
+   Persistence (localStorage first, then optional cloud push)
+   ===================================================================== */
+let saveT = null, dirty = false;
+function save() { dirty = true; clearTimeout(saveT); saveT = setTimeout(() => flush(), 250); }
+async function flush(opts = {}) {
+  if (!state) return;
+  clearTimeout(saveT); dirty = false;
+  try {
+    // Plain path writes synchronously (safe inside pagehide); encrypted path awaits.
+    const env = session.pass ? await seal(state) : { v: 1, enc: false, data: state };
+    localStorage.setItem(KEY, JSON.stringify(env));
+  } catch (e) { toast('Could not save on this device. Storage may be full or blocked.'); return; }
+  if (!opts.noPush) schedulePush();
+}
+const commit = () => { render(); save(); };
+
+/* =====================================================================
+   Cloud sync (Firestore, loaded on demand)
+   ===================================================================== */
+const sync = { status: 'off', msg: '', at: null, app: null, ref: null, unsub: null, pushT: null, blocked: false };
+function setStatus(k, msg = '') {
+  sync.status = k; sync.msg = msg;
+  if (k === 'synced') sync.at = new Date();
+  paintStatus();
+}
+function paintStatus() {
+  const k = sync.status;
+  $('#sync-dot').className = 'sdot ' + ({ synced: 'ok', syncing: 'busy', connecting: 'busy', error: 'err' }[k] || '');
+  let t = { off: 'Not connected', connecting: 'Connecting…', syncing: 'Syncing…' }[k];
+  if (k === 'synced') t = 'Synced at ' + (sync.at || new Date()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (k === 'error') t = 'Sync problem: ' + sync.msg + (/permission/i.test(sync.msg) ? ' Check your Firestore rules.' : '');
+  const el = $('#sy-status'); el.textContent = t; el.className = 'status ' + k;
+}
+const loadScript = src => new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = src; s.onload = res;
+  s.onerror = () => rej(new Error('Could not load Firebase. Are you offline?'));
+  document.head.appendChild(s);
+});
+async function loadFirebase() {
+  if (window.firebase && firebase.firestore) return;
+  await loadScript(FB_BASE + 'firebase-app-compat.js');
+  await loadScript(FB_BASE + 'firebase-firestore-compat.js');
+}
+function parseCfg(txt) {
+  const o = {};
+  for (const m of txt.matchAll(/["']?([A-Za-z]\w*)["']?\s*:\s*["']([^"']*)["']/g)) o[m[1]] = m[2];
+  return o.apiKey && o.projectId ? o : null;
+}
+function teardownSync() {
+  clearTimeout(sync.pushT);
+  if (sync.unsub) { try { sync.unsub(); } catch {} }
+  const a = sync.app; sync.unsub = null; sync.app = null; sync.ref = null;
+  if (a) a.delete().catch(() => {});
+}
+async function connectSync() {
+  if (!settings.cfg || !settings.accountId || !state) return;
+  teardownSync(); sync.blocked = false; setStatus('connecting');
+  try {
+    await loadFirebase();
+    sync.app = firebase.initializeApp(settings.cfg, 'todo-' + Date.now());
+    sync.ref = sync.app.firestore().collection('paperTodo').doc(settings.accountId);
+    sync.unsub = sync.ref.onSnapshot(onRemote, err => setStatus('error', err.message));
+  } catch (e) { setStatus('error', e.message); }
+}
+async function onRemote(snap) {
+  if (!state) return;
+  if (!snap.exists) { sync.blocked = false; pushNow(); return; }
+  if (snap.metadata.hasPendingWrites) return; // echo of our own write
+  let remote;
+  try { remote = normalizeState(await openEnv(JSON.parse(snap.data().payload))); }
+  catch (e) {
+    sync.blocked = true; // never overwrite data we can't read
+    setStatus('error', e.message === 'LOCKED' ? 'The cloud copy is encrypted. Turn on the passphrase lock with the same passphrase.'
+      : e.message === 'BADPASS' ? 'That passphrase does not match the cloud copy.' : 'The cloud copy could not be read.');
+    return;
+  }
+  sync.blocked = false;
+  const merged = mergeStates(state, remote), cm = canon(merged);
+  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); }
+  if (cm !== canon(remote)) schedulePush(0); else setStatus('synced');
+}
+function schedulePush(delay = 800) { if (!sync.ref) return; clearTimeout(sync.pushT); sync.pushT = setTimeout(pushNow, delay); }
+async function pushNow() {
+  if (!sync.ref || sync.blocked || !state) return;
+  try {
+    setStatus('syncing');
+    const env = await seal(state);
+    await sync.ref.set({ payload: JSON.stringify(env), updatedAt: Date.now() });
+    setStatus('synced');
+  } catch (e) { setStatus('error', e.message); }
+}
+
+/* =====================================================================
+   Sections, grouping & urgency
+   ===================================================================== */
+const SECTIONS = [
+  { id: 'todo', name: 'TODO', preset: { kind: 'task', status: 'scheduled' }, empty: 'Nothing scheduled. Give an unorganized task a to-do date to move it here.' },
+  { id: 'unorganized', name: 'Unorganized', preset: { kind: 'task', status: 'unorganized' }, empty: 'Brain-dump above. Dates can wait.' },
+  { id: 'reminders', name: 'Reminders', preset: { kind: 'reminder', status: 'scheduled' }, empty: 'No reminders. Use the + to add one.' },
+  { id: 'completed', name: 'Completed', preset: null, empty: 'Finished tasks land here.' }
+];
+function sectionOf(t) {
+  if (t.status === 'completed') return 'completed';
+  if (t.kind === 'reminder') return 'reminders';
+  if (t.status === 'unorganized') return 'unorganized';
+  return 'todo';
+}
+const actDate = t => [t.todoDate, t.dueDate].filter(Boolean).sort()[0] || '';
+const byUrgency = (a, b) => (actDate(a) || '9999-12-31').localeCompare(actDate(b) || '9999-12-31') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt - b.createdAt;
+
+/* Deadline = due date, or the to-do date when there is no due date. Past it → overdue; today/tomorrow → soon. */
+function urgency(t) {
+  if (t.status === 'completed') return 'none';
+  const dl = t.dueDate || t.todoDate;
+  if (!dl) return 'none';
+  const d = diffDays(dl, todayStr());
+  return d < 0 ? 'overdue' : d <= 1 ? 'soon' : 'none';
+}
+/* Date view buckets use the earliest of the two dates ("when do I need to act?"). */
+const BUCKETS = [['overdue', 'Overdue', 'var(--red)'], ['today', 'Today', 'var(--amber)'], ['tomorrow', 'Tomorrow', 'var(--amber)'], ['week', 'Next 7 days', ''], ['later', 'Later', ''], ['none', 'No date', '']];
+function bucketOf(t) {
+  const today = todayStr(), dl = t.dueDate || t.todoDate;
+  if (!dl) return 'none';
+  if (diffDays(dl, today) < 0) return 'overdue';
+  const d = diffDays(actDate(t), today);
+  return d <= 0 ? 'today' : d === 1 ? 'tomorrow' : d <= 7 ? 'week' : 'later';
+}
+function tagColor(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return `hsl(${h % 360} 60% 72%)`; }
+function byTag(list) {
+  const m = new Map();
+  list.forEach(t => { const k = t.tag || ''; if (!m.has(k)) m.set(k, []); m.get(k).push(t); });
+  return [...m.keys()].sort((a, b) => !a ? 1 : !b ? -1 : tagSort(a, b)).map(k => ({ label: k || 'No tag', untagged: !k, dot: k ? tagColor(k) : '', items: m.get(k) }));
+}
+function byBucket(list) {
+  return BUCKETS.map(([id, label, dot]) => ({ label, dot, items: list.filter(t => bucketOf(t) === id) })).filter(g => g.items.length);
+}
+function groupBy(secId, list) {
+  if (secId === 'completed') {
+    const l = [...list].sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+    return settings.view === 'category' ? byTag(l) : [{ label: '', items: l }];
+  }
+  const l = [...list].sort(byUrgency);
+  return settings.view === 'category' ? byTag(l) : byBucket(l);
+}
+
+/* =====================================================================
+   Rendering
+   ===================================================================== */
+function rowHTML(t, showTag, secId) {
+  const done = t.status === 'completed', u = urgency(t), today = todayStr();
+  const ucls = u === 'overdue' ? 'red' : u === 'soon' ? 'amber' : '';
+  let meta = '';
+  if (showTag && t.tag) meta += `<span class="pill"><i class="dot" style="background:${tagColor(t.tag)}"></i>${esc(t.tag)}</span>`;
+  if (t.todoDate) {
+    const d = diffDays(t.todoDate, today), lab = t.kind === 'reminder' ? 'On' : 'Do';
+    const txt = d === 0 ? `${lab} today` : d === 1 ? `${lab} tomorrow` : `${lab} ${fmt(t.todoDate)}`;
+    const cls = done ? '' : t.dueDate ? (d < 0 ? 'amber' : '') : ucls;
+    meta += `<span class="pill ${cls}" title="${t.kind === 'reminder' ? 'Reminder date' : 'Planned work date'}">${ic('cal', 12)}${txt}</span>`;
+  }
+  if (t.dueDate) {
+    const d = diffDays(t.dueDate, today);
+    const txt = done ? `Due ${fmt(t.dueDate)}` : d < 0 ? `${-d}d overdue` : d === 0 ? 'Due today' : d === 1 ? 'Due tomorrow' : `Due ${fmt(t.dueDate)}`;
+    meta += `<span class="pill ${ucls}" title="Official deadline">${txt}</span>`;
+  }
+  if (t.todoDate && t.dueDate && !done) {
+    const g = diffDays(t.dueDate, t.todoDate);
+    const txt = g > 0 ? `${g}d buffer` : g === 0 ? 'Same-day' : `${-g}d after due`;
+    meta += `<span class="pill ${g < 0 ? 'red' : ''}" title="Gap between your to-do date and the due date">${txt}</span>`;
+  }
+  if (secId === 'todo') meta += `<button type="button" class="pill ${t.status === 'progress' ? 'accent' : ''}" data-action="cycle" title="Change status">${t.status === 'progress' ? 'In progress' : 'Scheduled'}</button>`;
+  if (done && t.completedAt) meta += `<span class="pill">Done ${fmt(ymd(new Date(t.completedAt)))}</span>`;
+  return `<li class="row ${done ? 'done' : ''} ${u === 'overdue' ? 'overdue' : ''} ${u === 'soon' ? 'soon' : ''} ${lastToggled === t.id ? 'just' : ''}" data-id="${esc(t.id)}">
+    <button type="button" class="check" data-action="toggle" aria-pressed="${done}" aria-label="${done ? 'Mark not done' : 'Mark done'}: ${esc(t.title)}"><span class="box">${done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="24" d="M20 6 9 17l-5-5"/></svg>' : ''}</span></button>
+    <div class="row-body" data-action="edit" role="button" tabindex="0" aria-label="Edit ${esc(t.title)}">
+      <div class="row-title">${esc(t.title)}</div>
+      ${t.notes ? `<div class="row-notes">${esc(t.notes)}</div>` : ''}
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </div>
+  </li>`;
+}
+function sectionHTML(s, list) {
+  const col = !!settings.collapsed[s.id];
+  let body = '';
+  if (!col) {
+    if (!list.length) body = `<p class="empty">${s.empty}</p>`;
+    else {
+      const gs = groupBy(s.id, list);
+      const flat = gs.length === 1 && (gs[0].label === '' || gs[0].untagged);
+      body = gs.map(g => `${flat ? '' : `<h3 class="grp">${g.dot ? `<i class="dot" style="background:${g.dot}"></i>` : ''}${esc(g.label)}<span class="grp-n">${g.items.length}</span></h3>`}
+        <ul class="rows">${g.items.map(t => rowHTML(t, settings.view === 'date', s.id)).join('')}</ul>`).join('');
+    }
+  }
+  return `<section class="sec ${col ? 'collapsed' : ''}">
+    <div class="sec-head">
+      <button type="button" class="sec-toggle" data-action="collapse" data-sec="${s.id}" aria-expanded="${!col}">
+        <span class="sec-name hand">${s.id === 'completed' ? ic('check', 22) : ''}${s.name}</span><span class="sec-count">${list.length}</span><span class="chev">${ic('chev', 18)}</span>
+      </button>
+      ${s.preset ? `<button type="button" class="icon-btn" data-action="add" data-sec="${s.id}" aria-label="Add to ${s.name}">${ic('plus', 22)}</button>` : ''}
+    </div>${body}</section>`;
+}
+function render() {
+  if (!state) return;
+  dayKey = todayStr();
+  const ti = $('#title');
+  if (document.activeElement !== ti && ti.value !== state.title) ti.value = state.title;
+  document.title = state.title || 'Todo';
+  $$('[data-action=view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === settings.view)));
+
+  const live = state.tasks.filter(t => !t.deleted);
+  const tags = [...new Set(live.map(t => t.tag).filter(Boolean))].sort(tagSort);
+  if (settings.filterTag && !tags.includes(settings.filterTag)) { settings.filterTag = ''; saveSettings(); }
+  $('#chips').innerHTML = tags.length ? [''].concat(tags).map(t =>
+    `<button type="button" class="chip" data-action="chip" data-tag="${esc(t)}" aria-pressed="${t === settings.filterTag}">${t ? esc(t) : 'All'}</button>`).join('') : '';
+  $('#tag-list').innerHTML = tags.map(t => `<option value="${esc(t)}"></option>`).join('');
+
+  const shown = live.filter(t => !settings.filterTag || t.tag === settings.filterTag);
+  const by = { todo: [], unorganized: [], reminders: [], completed: [] };
+  shown.forEach(t => by[sectionOf(t)].push(t));
+  const sample = live.length ? '' : `<div class="sample"><p class="hand">A blank page.</p><p>Type a task above to start, or <button type="button" class="link" data-action="sample">load a few sample tasks</button> to see how it works.</p></div>`;
+  $('#sections').innerHTML = sample + SECTIONS.map(s => sectionHTML(s, by[s.id])).join('');
+  lastToggled = null;
+}
+
+/* =====================================================================
+   Task actions
+   ===================================================================== */
+function toggleDone(id) {
+  const t = find(id); if (!t) return;
+  if (t.status === 'completed') {
+    t.status = t.prevStatus && t.prevStatus !== 'completed' ? t.prevStatus : (t.todoDate ? 'scheduled' : 'unorganized');
+    t.completedAt = null;
+  } else { t.prevStatus = t.status; t.status = 'completed'; t.completedAt = Date.now(); lastToggled = id; }
+  touch(t); commit();
+}
+function deleteTask(id) {
+  const i = state.tasks.findIndex(t => t.id === id);
+  if (i > -1) state.tasks[i] = { id, deleted: true, updatedAt: Date.now() };
+}
+function addSamples() {
+  const add = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
+  [
+    { title: 'MTE502 Lab 3 Code', notes: 'Add X and Y value outputs', tag: 'MTE502', status: 'progress', todoDate: add(0), dueDate: add(3) },
+    { title: 'MEC713 problem set 4', tag: 'MEC713', status: 'scheduled', todoDate: add(1), dueDate: add(1) },
+    { title: 'EES612 reading notes', tag: 'EES612', status: 'scheduled', todoDate: add(-3), dueDate: add(-1) },
+    { title: 'Update résumé for Co-Op postings', tag: 'Co-Op', status: 'unorganized' },
+    { title: 'Renew transit pass', kind: 'reminder', status: 'scheduled', tag: 'Personal', todoDate: add(14) }
+  ].forEach(o => state.tasks.push(normTask(o)));
+  commit();
+}
+
+/* =====================================================================
+   Modals
+   ===================================================================== */
+const openModal = id => { $('#' + id).hidden = false; document.body.classList.add('modal-open'); };
+function closeModals() { $$('.overlay').forEach(o => o.hidden = true); document.body.classList.remove('modal-open'); }
+function setKind(k) {
+  formKind = k;
+  $$('[data-action=kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === k)));
+  $('#lbl-todo').textContent = k === 'reminder' ? 'Reminder date' : 'To-do date';
+}
+function openTask(id, preset) {
+  editingId = id || null;
+  const t = id ? find(id) : null;
+  const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', status: 'unorganized', ...(preset || {}) };
+  $('#task-heading').textContent = t ? 'Edit ' + (p.kind === 'reminder' ? 'reminder' : 'task') : (p.kind === 'reminder' ? 'New reminder' : 'New task');
+  $('#f-title').value = p.title; $('#f-notes').value = p.notes; $('#f-tag').value = p.tag || '';
+  $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-status').value = p.status;
+  $('#btn-del').hidden = !t;
+  setKind(p.kind);
+  openModal('m-task');
+  setTimeout(() => $('#f-title').focus(), 30);
+}
+function saveTask() {
+  const title = $('#f-title').value.trim();
+  if (!title) { $('#f-title').focus(); toast('Give the task a title.'); return; }
+  const v = {
+    title, notes: $('#f-notes').value.trim(), tag: canonTag($('#f-tag').value.trim()), kind: formKind,
+    todoDate: $('#f-todo').value, dueDate: $('#f-due').value, status: $('#f-status').value
+  };
+  if (v.kind === 'task' && v.status === 'unorganized' && v.todoDate) v.status = 'scheduled';
+  const t = editingId ? find(editingId) : null;
+  if (t) {
+    const was = t.status;
+    Object.assign(t, v);
+    if (v.status === 'completed' && was !== 'completed') { t.completedAt = Date.now(); t.prevStatus = was; }
+    if (v.status !== 'completed' && was === 'completed') t.completedAt = null;
+    touch(t);
+  } else {
+    state.tasks.push(normTask({ ...v, completedAt: v.status === 'completed' ? Date.now() : null }));
+  }
+  closeModals(); commit();
+}
+function refreshLockUI() {
+  const on = !!session.pass;
+  $('#lock-off').hidden = on; $('#lock-on').hidden = !on; $('#btn-lock').hidden = !on;
+}
+function openSync() {
+  $('#sy-id').value = settings.accountId || ''; $('#sy-cfg').value = settings.cfgText || '';
+  $('#lk-pass').value = ''; $('#lk-pass2').value = '';
+  refreshLockUI(); paintStatus(); openModal('m-sync');
+}
+
+/* ---------- lock / unlock ---------- */
+async function enableLock() {
+  const a = $('#lk-pass').value, b = $('#lk-pass2').value;
+  if (!(window.crypto && crypto.subtle)) return toast('Encryption needs a secure (https) page.');
+  if (a.length < 6) return toast('Use a passphrase of at least 6 characters.');
+  if (a !== b) return toast('The two passphrases do not match.');
+  session.pass = a; session.salt = toB64(crypto.getRandomValues(new Uint8Array(16))); keyCache.clear();
+  await flush(); refreshLockUI(); $('#lk-pass').value = ''; $('#lk-pass2').value = '';
+  toast('Passphrase lock is on.');
+}
+async function disableLock() {
+  const msg = sync.ref ? 'Remove the lock? Your tasks will be stored unencrypted on this device and in the cloud.' : 'Remove the lock? Your tasks will be stored unencrypted on this device.';
+  if (!confirm(msg)) return;
+  session.pass = null; session.salt = null; keyCache.clear(); sync.blocked = false;
+  await flush(); refreshLockUI(); toast('Lock removed.');
+}
+async function lockNow() {
+  if (!session.pass) return;
+  await flush({ noPush: true });
+  teardownSync(); setStatus('off');
+  state = null; session = { pass: null, salt: null }; keyCache.clear();
+  closeModals(); $('#app').hidden = true; showLock();
+}
+function showLock() { $('#lock').hidden = false; $('#lk-input').value = ''; $('#lk-err').textContent = ''; setTimeout(() => $('#lk-input').focus(), 50); }
+async function tryUnlock() {
+  const p = $('#lk-input').value; if (!p) return;
+  try {
+    const env = JSON.parse(localStorage.getItem(KEY));
+    session.pass = p; session.salt = env.salt; keyCache.clear();
+    state = normalizeState(await openEnv(env));
+    $('#lock').hidden = true; startApp();
+  } catch (e) {
+    session = { pass: null, salt: null }; keyCache.clear(); state = null;
+    $('#lk-err').textContent = 'That passphrase did not work.';
+    $('#lk-input').select();
+  }
+}
+
+/* ---------- sync controls ---------- */
+async function doConnect() {
+  const id = $('#sy-id').value.trim(), cfg = parseCfg($('#sy-cfg').value);
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(id)) return toast('Account ID needs 8–64 letters, numbers, - or _.');
+  if (!cfg) return toast('Paste the firebaseConfig from your Firebase web app. It needs apiKey and projectId.');
+  if (!session.pass && !confirm('The passphrase lock is off, so your tasks will be stored unencrypted in Firestore. Connect anyway?')) return;
+  Object.assign(settings, { accountId: id, cfg, cfgText: $('#sy-cfg').value, sync: true }); saveSettings();
+  await connectSync();
+}
+function disconnect() { teardownSync(); settings.sync = false; saveSettings(); setStatus('off'); }
+
+/* ---------- backup ---------- */
+function exportData() {
+  const blob = new Blob([JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), data: state }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `todo-backup-${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+let downTarget = null;
+document.addEventListener('pointerdown', e => { downTarget = e.target; });
+document.addEventListener('click', async e => {
+  const t = e.target;
+  if (t.classList && t.classList.contains('overlay') && downTarget === t) { closeModals(); return; }
+  const el = t.closest('[data-action]'); if (!el) return;
+  const a = el.dataset.action;
+  const rowEl = el.closest('[data-id]'), id = rowEl && rowEl.dataset.id;
+  switch (a) {
+    case 'toggle': toggleDone(id); break;
+    case 'edit': openTask(id); break;
+    case 'cycle': { const k = find(id); if (k) { k.status = k.status === 'progress' ? 'scheduled' : 'progress'; touch(k); commit(); } break; }
+    case 'add': { const s = SECTIONS.find(x => x.id === el.dataset.sec); openTask(null, { ...s.preset, tag: settings.filterTag }); break; }
+    case 'collapse': settings.collapsed[el.dataset.sec] = !settings.collapsed[el.dataset.sec]; saveSettings(); render(); break;
+    case 'view': settings.view = el.dataset.val; saveSettings(); render(); break;
+    case 'chip': settings.filterTag = el.dataset.tag; saveSettings(); render(); break;
+    case 'open-sync': openSync(); break;
+    case 'close': closeModals(); break;
+    case 'kind': setKind(el.dataset.val); break;
+    case 'delete-task': if (editingId && confirm('Delete this task? This cannot be undone.')) { deleteTask(editingId); closeModals(); commit(); } break;
+    case 'lock-now': await lockNow(); break;
+    case 'enable-lock': await enableLock(); break;
+    case 'disable-lock': await disableLock(); break;
+    case 'gen-id': $('#sy-id').value = genId(); break;
+    case 'connect': await doConnect(); break;
+    case 'disconnect': disconnect(); break;
+    case 'export': exportData(); break;
+    case 'import': $('#file').click(); break;
+    case 'sample': addSamples(); break;
+    case 'reset-local': if (confirm("Erase this device's copy? Encrypted data in the cloud (if you sync) is not affected.")) { localStorage.removeItem(KEY); location.reload(); } break;
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModals();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.row-body')) { e.preventDefault(); e.target.click(); }
+});
+$('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
+$('#lock-form').addEventListener('submit', e => { e.preventDefault(); tryUnlock(); });
+$('#title').addEventListener('input', e => { state.title = e.target.value; state.titleAt = Date.now(); document.title = state.title || 'Todo'; save(); });
+$('#quick').addEventListener('submit', e => {
+  e.preventDefault();
+  let v = $('#q').value.trim(); if (!v) return;
+  let tag = '';
+  v = v.replace(/(^|\s)#([^\s#]+)/, (m, sp, tg) => { tag = tg; return sp; }).trim();
+  if (!v) { v = tag; tag = ''; }
+  state.tasks.push(normTask({ title: v, tag: canonTag(tag || settings.filterTag), status: 'unorganized' }));
+  $('#q').value = ''; commit();
+});
+$('#file').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    const inc = normalizeState(j.data || j);
+    state = mergeStates(state, inc); commit();
+    toast(`Imported ${inc.tasks.filter(t => !t.deleted).length} tasks.`);
+  } catch { toast('That file is not a valid backup.'); }
+});
+window.addEventListener('pagehide', () => { if (dirty) flush(); });
+window.addEventListener('online', () => { if (settings.sync && state && sync.status === 'error') connectSync(); });
+const dayCheck = () => { if (state && dayKey !== todayStr()) render(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) dayCheck(); });
+setInterval(dayCheck, 60000);
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+function startApp() {
+  $('#app').hidden = false;
+  refreshLockUI(); render(); paintStatus();
+  if (settings.sync) connectSync();
+}
+function boot() {
+  $$('[data-ic]').forEach(el => { el.innerHTML = ic(el.dataset.ic, +el.dataset.s || 18); });
+  settings = loadSettings();
+  if (!settings.collapsed || typeof settings.collapsed !== 'object') settings.collapsed = {};
+  const raw = localStorage.getItem(KEY);
+  let env = null;
+  try { env = raw ? JSON.parse(raw) : null; } catch { if (raw) { try { localStorage.setItem(KEY + '.bak', raw); } catch {} } }
+  if (env && env.enc) { showLock(); return; }
+  state = env && env.data ? normalizeState(env.data) : emptyState();
+  startApp();
+}
+boot();
+})();
+</script>
+</body>
+</html>
