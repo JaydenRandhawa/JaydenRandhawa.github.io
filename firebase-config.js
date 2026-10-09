@@ -1,3 +1,5 @@
+const CALENDAR_FEED_URL = "https://your-worker.workers.dev"; to firebase-config.js
+
 const firebaseConfig = {
   apiKey: "AIzaSyCSOut46JTbkMuKTtXYZui6l29_YFMScHA",
   authDomain: "todo-app-5ea43.firebaseapp.com",
