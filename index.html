@@ -68,6 +68,13 @@
   .empty{color:var(--faint);padding:14px 2px;font-size:15px}
   .grp{display:flex;align-items:center;gap:8px;margin:18px 0 2px;font-size:15px;font-weight:600;color:var(--dim)}
   .grp-n{color:var(--faint);font-weight:400}
+  .grp-rel{color:var(--faint);font-weight:400;font-size:13.5px}
+  .sec.timeline .grp{margin-top:6px}
+  .gap{height:18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;padding-bottom:1px}
+  .gap span{font-size:11.5px;color:var(--accent);line-height:1}
+  .gap.today{border-bottom-color:var(--accent)}
+  .gap-run{height:30px;border-bottom:1px dashed var(--line2);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12.5px}
+  .btn.sm{min-height:36px;padding:0 13px;font-size:14px}
   .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
 
   /* ---------- rows ---------- */
@@ -173,7 +180,7 @@
   <div class="flex flex-wrap items-center gap-3">
     <div class="seg" role="group" aria-label="Group tasks by">
       <button type="button" data-action="view" data-val="category" aria-pressed="true">By tag</button>
-      <button type="button" data-action="view" data-val="date" aria-pressed="false">By urgency</button>
+      <button type="button" data-action="view" data-val="date" aria-pressed="false">By date</button>
     </div>
     <div id="chips" class="chips" role="group" aria-label="Filter by tag"></div>
   </div>
@@ -332,7 +339,7 @@ function fmt(s) {
   const d = parseD(s), n = new Date();
   return d.toLocaleDateString(undefined, d.getFullYear() === n.getFullYear()
     ? { weekday: 'short', month: 'short', day: 'numeric' }
-    : { month: 'short', day: 'numeric', year: 'numeric' });
+    : { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 /* =====================================================================
@@ -549,23 +556,40 @@ function urgency(t) {
   const d = diffDays(dl, todayStr());
   return d < 0 ? 'overdue' : d <= 1 ? 'soon' : 'none';
 }
-/* Date view buckets use the earliest of the two dates ("when do I need to act?"). */
-const BUCKETS = [['overdue', 'Overdue', 'var(--red)'], ['today', 'Today', 'var(--amber)'], ['tomorrow', 'Tomorrow', 'var(--amber)'], ['week', 'Next 7 days', ''], ['later', 'Later', ''], ['none', 'No date', '']];
-function bucketOf(t) {
-  const today = todayStr(), dl = t.dueDate || t.todoDate;
-  if (!dl) return 'none';
-  if (diffDays(dl, today) < 0) return 'overdue';
-  const d = diffDays(actDate(t), today);
-  return d <= 0 ? 'today' : d === 1 ? 'tomorrow' : d <= 7 ? 'week' : 'later';
-}
+/* Date view groups tasks by the exact date you next need to act (earliest of to-do and due date). */
+const MAX_GAP_LINES = 10; // longer runs of empty days collapse into one "N empty days" line
 function tagColor(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return `hsl(${h % 360} 60% 72%)`; }
 function byTag(list) {
   const m = new Map();
   list.forEach(t => { const k = t.tag || ''; if (!m.has(k)) m.set(k, []); m.get(k).push(t); });
   return [...m.keys()].sort((a, b) => !a ? 1 : !b ? -1 : tagSort(a, b)).map(k => ({ label: k || 'No tag', untagged: !k, dot: k ? tagColor(k) : '', items: m.get(k) }));
 }
-function byBucket(list) {
-  return BUCKETS.map(([id, label, dot]) => ({ label, dot, items: list.filter(t => bucketOf(t) === id) })).filter(g => g.items.length);
+function byExactDate(list, spacers) {
+  const today = todayStr(), m = new Map(), none = [];
+  list.forEach(t => { const d = actDate(t); if (!d) { none.push(t); return; } if (!m.has(d)) m.set(d, []); m.get(d).push(t); });
+  const dates = [...m.keys()].sort(), out = [];
+  const group = d => {
+    const n = diffDays(d, today);
+    return { label: fmt(d), date: d, items: m.get(d),
+      dot: n < 0 ? 'var(--red)' : n <= 1 ? 'var(--amber)' : '',
+      rel: n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n < 0 ? `${-n}d ago` : '' };
+  };
+  if (!spacers) dates.forEach(d => out.push(group(d)));
+  else if (dates.length) {
+    const start = dates[0] < today ? dates[0] : today, end = dates[dates.length - 1];
+    let empties = [];
+    const flushEmpties = () => {
+      if (empties.length > MAX_GAP_LINES) out.push({ run: empties.length });
+      else empties.forEach(e => out.push({ gap: true, date: e, today: e === today }));
+      empties = [];
+    };
+    for (const d = parseD(start), e = parseD(end); d <= e; d.setDate(d.getDate() + 1)) {
+      const k = ymd(d);
+      if (m.has(k)) { flushEmpties(); out.push(group(k)); } else empties.push(k);
+    }
+  }
+  if (none.length) out.push({ label: 'No date', dot: '', items: none });
+  return out;
 }
 function groupBy(secId, list) {
   if (secId === 'completed') {
@@ -573,7 +597,7 @@ function groupBy(secId, list) {
     return settings.view === 'category' ? byTag(l) : [{ label: '', items: l }];
   }
   const l = [...list].sort(byUrgency);
-  return settings.view === 'category' ? byTag(l) : byBucket(l);
+  return settings.view === 'category' ? byTag(l) : byExactDate(l, secId === 'todo');
 }
 
 /* =====================================================================
@@ -619,16 +643,21 @@ function sectionHTML(s, list) {
     else {
       const gs = groupBy(s.id, list);
       const flat = gs.length === 1 && (gs[0].label === '' || gs[0].untagged);
-      body = gs.map(g => `${flat ? '' : `<h3 class="grp">${g.dot ? `<i class="dot" style="background:${g.dot}"></i>` : ''}${esc(g.label)}<span class="grp-n">${g.items.length}</span></h3>`}
-        <ul class="rows">${g.items.map(t => rowHTML(t, settings.view === 'date', s.id)).join('')}</ul>`).join('');
+      body = gs.map(g => {
+        if (g.gap) return `<div class="gap ${g.today ? 'today' : ''}" title="${esc(fmt(g.date))}: nothing planned">${g.today ? '<span>Today</span>' : ''}</div>`;
+        if (g.run) return `<div class="gap-run" title="${g.run} days with nothing planned">${g.run} empty days</div>`;
+        return `${flat ? '' : `<h3 class="grp">${g.dot ? `<i class="dot" style="background:${g.dot}"></i>` : ''}${esc(g.label)}${g.rel ? `<span class="grp-rel">${g.rel}</span>` : ''}<span class="grp-n">${g.items.length}</span></h3>`}
+        <ul class="rows">${g.items.map(t => rowHTML(t, settings.view === 'date', s.id)).join('')}</ul>`;
+      }).join('');
     }
   }
-  return `<section class="sec ${col ? 'collapsed' : ''}">
+  return `<section class="sec ${col ? 'collapsed' : ''} ${s.id === 'todo' && settings.view === 'date' ? 'timeline' : ''}">
     <div class="sec-head">
       <button type="button" class="sec-toggle" data-action="collapse" data-sec="${s.id}" aria-expanded="${!col}">
         <span class="sec-name hand">${s.id === 'completed' ? ic('check', 22) : ''}${s.name}</span><span class="sec-count">${list.length}</span><span class="chev">${ic('chev', 18)}</span>
       </button>
       ${s.preset ? `<button type="button" class="icon-btn" data-action="add" data-sec="${s.id}" aria-label="Add to ${s.name}">${ic('plus', 22)}</button>` : ''}
+      ${s.id === 'completed' && list.length ? `<button type="button" class="btn sm danger" data-action="clear-done">Clear completed</button>` : ''}
     </div>${body}</section>`;
 }
 function render() {
@@ -668,6 +697,14 @@ function toggleDone(id) {
 function deleteTask(id) {
   const i = state.tasks.findIndex(t => t.id === id);
   if (i > -1) state.tasks[i] = { id, deleted: true, updatedAt: Date.now() };
+}
+function clearCompleted() {
+  const done = state.tasks.filter(t => !t.deleted && t.status === 'completed' && (!settings.filterTag || t.tag === settings.filterTag));
+  if (!done.length) return;
+  const scope = settings.filterTag ? ` tagged ${settings.filterTag}` : '';
+  if (!confirm(`Delete ${done.length} completed task${done.length === 1 ? '' : 's'}${scope}? This cannot be undone.`)) return;
+  done.forEach(t => deleteTask(t.id));
+  commit(); toast('Completed list cleared.');
 }
 function addSamples() {
   const add = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
@@ -825,6 +862,7 @@ document.addEventListener('click', async e => {
     case 'export': exportData(); break;
     case 'import': $('#file').click(); break;
     case 'sample': addSamples(); break;
+    case 'clear-done': clearCompleted(); break;
     case 'reset-local': if (confirm("Erase this device's copy? Encrypted data in the cloud (if you sync) is not affected.")) { localStorage.removeItem(KEY); location.reload(); } break;
   }
 });
