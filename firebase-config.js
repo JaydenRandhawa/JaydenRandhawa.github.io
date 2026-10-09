@@ -1,14 +1,9 @@
-// Firebase web config for the todo app. Safe to commit: it only points the app at your project.
-//
-// Replace the block below with the one from the Firebase console
-// (Project settings > General > Your apps > Web app > "Config").
-// Copy ONLY the "const firebaseConfig = { ... };" block as Firebase shows it,
-// not the import lines or the initializeApp lines.
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyCSOut46JTbkMuKTtXYZui6l29_YFMScHA",
+  authDomain: "todo-app-5ea43.firebaseapp.com",
+  projectId: "todo-app-5ea43",
+  storageBucket: "todo-app-5ea43.firebasestorage.app",
+  messagingSenderId: "348816988270",
+  appId: "1:348816988270:web:11f17671dae15d9f65ee7f",
+  measurementId: "G-YDES58LBZR"
 };
