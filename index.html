@@ -315,6 +315,12 @@ service cloud.firestore {
     </section>
 
     <section class="blk">
+      <h3>Sound</h3>
+      <label class="chk"><input type="checkbox" id="opt-sound"><span>Play a sound when I complete a task</span></label>
+      <p class="hint">This setting is saved on this device only. On iPhone and iPad, the silent switch mutes it.</p>
+    </section>
+
+    <section class="blk">
       <h3>Backup</h3>
       <div class="row-btns">
         <button type="button" class="btn" data-action="export">Export JSON</button>
@@ -427,7 +433,7 @@ function fmt(s) {
 /* =====================================================================
    State & settings
    ===================================================================== */
-const DEFAULTS = { view: 'category', filterTag: '', collapsed: {}, accountId: '', cfg: null, cfgText: '', sync: false };
+const DEFAULTS = { view: 'category', filterTag: '', collapsed: {}, accountId: '', cfg: null, cfgText: '', sync: false, sound: true };
 let settings = { ...DEFAULTS };
 let state = null;                 // { title, titleAt, tasks:[] }  (tasks may include tombstones)
 let session = { pass: null, salt: null };
@@ -674,7 +680,7 @@ function byExactDate(list, spacers) {
   };
   if (!spacers) dates.forEach(d => out.push(group(d)));
   else if (dates.length) {
-    const start = dates[0] < today ? dates[0] : today, end = dates[dates.length - 1];
+    const start = dates[0], end = dates[dates.length - 1];
     let empties = [];
     const flushEmpties = () => {
       if (empties.length > MAX_GAP_LINES) out.push({ run: empties.length });
@@ -789,12 +795,35 @@ function render() {
 /* =====================================================================
    Task actions
    ===================================================================== */
+let actx = null;
+/* Soft "thock" plus a two-note rising chime, synthesized with Web Audio (no audio files needed). */
+function playDone() {
+  if (settings.sound === false) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = actx || new AC();
+    if (actx.state === 'suspended') actx.resume();
+    const t0 = actx.currentTime + 0.01;
+    const master = actx.createGain(); master.gain.value = 0.22; master.connect(actx.destination);
+    const k = actx.createOscillator(), kg = actx.createGain();
+    k.type = 'sine'; k.frequency.setValueAtTime(220, t0); k.frequency.exponentialRampToValueAtTime(90, t0 + 0.08);
+    kg.gain.setValueAtTime(0.6, t0); kg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+    k.connect(kg); kg.connect(master); k.start(t0); k.stop(t0 + 0.12);
+    [[659.25, 0.07], [987.77, 0.16]].forEach(([f, dt]) => {
+      const t = t0 + dt, o = actx.createOscillator(), o2 = actx.createOscillator(), g = actx.createGain(), g2 = actx.createGain();
+      o.type = 'sine'; o.frequency.value = f; o2.type = 'triangle'; o2.frequency.value = f * 2; g2.gain.value = 0.14;
+      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.start(t); o2.start(t); o.stop(t + 0.65); o2.stop(t + 0.65);
+    });
+  } catch {}
+}
 function toggleDone(id) {
   const t = find(id); if (!t) return;
   if (t.status === 'completed') {
     t.status = t.prevStatus && t.prevStatus !== 'completed' ? t.prevStatus : (t.todoDate ? 'scheduled' : 'unorganized');
     t.completedAt = null;
-  } else { t.prevStatus = t.status; t.status = 'completed'; t.completedAt = Date.now(); lastToggled = id; }
+  } else { t.prevStatus = t.status; t.status = 'completed'; t.completedAt = Date.now(); lastToggled = id; playDone(); }
   touch(t); commit();
 }
 function deleteTask(id) {
@@ -902,7 +931,7 @@ function refreshLockUI() {
 }
 function openSync() {
   $('#sy-id').value = settings.accountId || ''; $('#sy-cfg').value = settings.cfgText || '';
-  $('#lk-pass').value = ''; $('#lk-pass2').value = '';
+  $('#lk-pass').value = ''; $('#lk-pass2').value = ''; $('#opt-sound').checked = settings.sound !== false;
   const fc = !!fileCfg(); $('#cfg-note').hidden = !fc; $('#sy-cfg').hidden = fc;
   refreshLockUI(); paintStatus(); openModal('m-sync');
 }
@@ -1121,6 +1150,7 @@ $('#cal-base').addEventListener('change', e => {
   state.cal = { ...state.cal, base: v, at: Date.now() }; settings.feedBase = ''; saveSettings(); commit(); refreshCal();
 });
 $('#f-link').addEventListener('change', updateLinkUI);
+$('#opt-sound').addEventListener('change', e => { settings.sound = e.target.checked; saveSettings(); if (settings.sound) playDone(); });
 $('#title').addEventListener('blur', e => { if (state && !e.target.value.trim()) { e.target.value = 'TODO'; state.title = 'TODO'; state.titleAt = Date.now(); document.title = 'TODO'; save(); } });
 $('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
 $('#lock-form').addEventListener('submit', e => { e.preventDefault(); tryUnlock(); });
