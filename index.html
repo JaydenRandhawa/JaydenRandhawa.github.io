@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Delius&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
 <div id="app" class="wrap" hidden>
   <header class="flex items-start gap-3">
     <input id="title" type="text" maxlength="80" aria-label="List title" placeholder="Name this list" spellcheck="false">
+    <div id="clock" class="clock" hidden></div>
     <div class="flex items-center">
       <button id="btn-lock" class="icon-btn" data-action="lock-now" aria-label="Lock now" hidden><span data-ic="lock" data-s="20"></span></button>
       <button id="btn-cal" class="icon-btn" data-action="open-cal" aria-label="Calendar feed"><span data-ic="cal" data-s="22"></span></button>
@@ -43,7 +44,7 @@
     <button class="btn primary" type="submit">Add</button>
   </form>
 
-  <div class="flex flex-wrap items-center gap-3">
+  <div id="toolbar" class="flex flex-wrap items-center gap-3">
     <div class="seg" role="group" aria-label="Group tasks by">
       <button type="button" data-action="view" data-val="category" aria-pressed="true">By tag</button>
       <button type="button" data-action="view" data-val="date" aria-pressed="false">By date</button>
@@ -272,6 +273,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

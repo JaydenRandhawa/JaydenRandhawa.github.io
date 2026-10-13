@@ -12,6 +12,9 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 const genId = () => Array.from(crypto.getRandomValues(new Uint8Array(15)), b => b.toString(16).padStart(2, '0')).join('');
 const tagSort = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+/* Display mode: open the page with ?display for a read-only wall dashboard (optional ?zoom=1.5). */
+const qs = new URLSearchParams(location.search);
+const DISPLAY = qs.has('display') && qs.get('display') !== '0';
 
 const P = {
   check: '<path d="M20 6 9 17l-5-5"/>',
@@ -180,6 +183,7 @@ function setStatus(k, msg = '') {
 }
 function paintStatus() {
   const k = sync.status;
+  document.body.dataset.sync = k;
   $('#sync-dot').className = 'sdot ' + ({ synced: 'ok', syncing: 'busy', connecting: 'busy', error: 'err' }[k] || '');
   let t = { off: 'Not connected', connecting: 'Connecting…', syncing: 'Syncing…' }[k];
   if (k === 'synced') t = 'Synced at ' + (sync.at || new Date()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -367,7 +371,7 @@ function rowHTML(t, showTag, secId) {
   </li>`;
 }
 function sectionHTML(s, list) {
-  const col = !!settings.collapsed[s.id];
+  const col = !DISPLAY && !!settings.collapsed[s.id];
   let body = '';
   if (!col) {
     if (!list.length) body = `<p class="empty">${s.empty}</p>`;
@@ -401,16 +405,18 @@ function render() {
 
   const live = state.tasks.filter(t => !t.deleted);
   const tags = [...new Set(live.map(t => t.tag).filter(Boolean))].sort(tagSort);
-  if (settings.filterTag && !tags.includes(settings.filterTag)) { settings.filterTag = ''; saveSettings(); }
+  if (!DISPLAY && settings.filterTag && !tags.includes(settings.filterTag)) { settings.filterTag = ''; saveSettings(); }
   $('#chips').innerHTML = tags.length ? [''].concat(tags).map(t =>
     `<button type="button" class="chip" data-action="chip" data-tag="${esc(t)}" aria-pressed="${t === settings.filterTag}">${t ? esc(t) : 'All'}</button>`).join('') : '';
   $('#tag-list').innerHTML = tags.map(t => `<option value="${esc(t)}"></option>`).join('');
 
-  const shown = live.filter(t => !settings.filterTag || t.tag === settings.filterTag);
+  const ft = DISPLAY ? '' : settings.filterTag;
+  const shown = live.filter(t => !ft || t.tag === ft);
   const by = { todo: [], unorganized: [], reminders: [], completed: [] };
   shown.forEach(t => by[sectionOf(t)].push(t));
-  const sample = live.length ? '' : `<div class="sample"><p class="hand">A blank page.</p><p>Type a task above to start, or <button type="button" class="link" data-action="sample">load a few sample tasks</button> to see how it works.</p></div>`;
-  $('#sections').innerHTML = sample + SECTIONS.map(s => sectionHTML(s, by[s.id])).join('');
+  const sample = live.length || DISPLAY ? '' : `<div class="sample"><p class="hand">A blank page.</p><p>Type a task above to start, or <button type="button" class="link" data-action="sample">load a few sample tasks</button> to see how it works.</p></div>`;
+  const secs = DISPLAY ? SECTIONS.filter(s => s.id !== 'completed' && by[s.id].length) : SECTIONS;
+  $('#sections').innerHTML = sample + (DISPLAY && !secs.length ? '<p class="empty all-clear hand">Nothing on the list.</p>' : secs.map(s => sectionHTML(s, by[s.id])).join(''));
   lastToggled = null;
 }
 
@@ -790,6 +796,7 @@ document.addEventListener('click', async e => {
   const t = e.target;
   if (t.classList && t.classList.contains('overlay') && downTarget === t) { closeModals(); return; }
   const el = t.closest('[data-action]'); if (!el) return;
+  if (DISPLAY && !el.closest('#lock')) return; // read-only
   const a = el.dataset.action;
   const rowEl = el.closest('[data-id]'), id = rowEl && rowEl.dataset.id;
   switch (a) {
@@ -888,6 +895,21 @@ setInterval(dayCheck, 60000);
 /* =====================================================================
    Boot
    ===================================================================== */
+function initDisplay() {
+  document.body.classList.add('display');
+  const z = parseFloat(qs.get('zoom'));
+  document.documentElement.style.setProperty('--dz', String(z >= 0.6 && z <= 3 ? z : 1.3));
+  $('#title').readOnly = true; $('#title').tabIndex = -1;
+  const clock = $('#clock'); clock.hidden = false;
+  const tick = () => {
+    const n = new Date();
+    clock.innerHTML = `<b>${esc(n.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</b><span>${esc(n.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</span>`;
+  };
+  tick(); setInterval(tick, 15000);
+  // Refresh nightly to clear memory and pick up new code, unless a passphrase is held in memory.
+  const next = new Date(); next.setHours(3, 0, 0, 0); if (next <= Date.now()) next.setDate(next.getDate() + 1);
+  setTimeout(() => { if (!session.pass) location.reload(); }, next - Date.now());
+}
 function startApp() {
   $('#app').hidden = false;
   refreshLockUI(); render(); paintStatus();
@@ -896,6 +918,7 @@ function startApp() {
 function boot() {
   $$('[data-ic]').forEach(el => { el.innerHTML = ic(el.dataset.ic, +el.dataset.s || 18); });
   settings = loadSettings();
+  if (DISPLAY) initDisplay();
   if (!settings.collapsed || typeof settings.collapsed !== 'object') settings.collapsed = {};
   const raw = localStorage.getItem(KEY);
   let env = null;

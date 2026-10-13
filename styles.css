@@ -159,3 +159,19 @@ pre{background:var(--bg);border:1px solid var(--line2);border-radius:10px;paddin
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- display mode (?display): read-only wall dashboard ---------- */
+.clock{display:none}
+.display{cursor:none}
+.display #app{pointer-events:none;user-select:none;-webkit-user-select:none;zoom:var(--dz,1.3);max-width:none}
+.display header .icon-btn,.display #quick,.display #toolbar,.display .icon-btn,.display .row-edit,.display .check,.display .chev,.display .btn{display:none}
+.display .row-body{padding-left:12px}
+.display .sec{margin-top:26px}
+.display #sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:0 44px;align-items:start}
+.display .clock{display:flex;flex-direction:column;align-items:flex-end;flex:none;color:var(--dim);font-size:15px;line-height:1.25;padding-top:6px}
+.clock b{font-size:30px;font-weight:500;color:var(--ink)}
+.display .clock b::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--faint);margin-right:10px;position:relative;top:-3px}
+body[data-sync=synced] .clock b::before{background:var(--green)}
+body[data-sync=syncing] .clock b::before,body[data-sync=connecting] .clock b::before{background:var(--amber)}
+body[data-sync=error] .clock b::before{background:var(--red)}
+.all-clear{font-size:30px;text-align:center;padding:90px 0;grid-column:1/-1}
