@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Delius&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
-<link rel="stylesheet" href="styles.css?v=1">
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -52,6 +52,33 @@
   </div>
 
   <main id="sections"></main>
+</div>
+
+<!-- Task detail (expanded view) -->
+<div id="m-detail" class="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="sheet-head">
+      <h2 id="d-title" class="hand d-title"></h2>
+      <div class="hgroup">
+        <button type="button" class="icon-btn" data-action="detail-edit" aria-label="Edit this task"><span data-ic="pencil" data-s="19"></span></button>
+        <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
+      </div>
+    </div>
+    <div id="d-info"></div>
+    <section class="subs">
+      <h3 class="hand d-h">Subtasks <span id="d-count" class="grp-n"></span></h3>
+      <ul id="d-active"></ul>
+      <form id="sub-form" class="inline" autocomplete="off">
+        <input id="sub-new" class="inp" maxlength="200" placeholder="Add a subtask" aria-label="New subtask" enterkeyhint="done">
+        <button type="submit" class="btn">Add</button>
+      </form>
+      <div id="d-done-wrap" hidden>
+        <h3 class="hand d-h">Completed <span id="d-done-count" class="grp-n"></span></h3>
+        <ul id="d-done"></ul>
+      </div>
+    </section>
+    <div class="sheet-foot" style="margin-top:18px"><span class="grow"></span><button type="button" class="btn" id="d-toggle" data-action="detail-toggle">Mark task done</button></div>
+  </div>
 </div>
 
 <!-- Task modal -->
@@ -245,6 +272,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

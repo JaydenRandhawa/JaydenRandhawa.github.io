@@ -61,6 +61,29 @@ body.modal-open{overflow:hidden}
 .gap-run{height:30px;border-bottom:1px dashed var(--line2);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12.5px}
 .btn.sm{min-height:36px;padding:0 13px;font-size:14px}
 .pill .ell{max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.pill.green{color:var(--green);border-color:rgba(134,201,159,.45)}
+dl,dd{margin:0}
+.row-edit{width:44px;height:44px;display:grid;place-items:center;flex:none;color:var(--faint);border-radius:10px;margin-top:2px}
+.row-edit:hover{color:var(--ink);background:rgba(255,255,255,.07)}
+.hgroup{display:flex;align-items:center;flex:none}
+.d-title{flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.25}
+.d-notes{color:var(--dim);white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 10px;font-size:15.5px}
+.d-dates{margin:0 0 12px}
+.d-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.d-row dt{color:var(--dim);flex:none}
+.d-row dd{text-align:right}
+.d-row dd.red{color:var(--red)}
+.d-row dd.amber{color:var(--amber)}
+.rel{color:var(--faint);font-size:13.5px;margin-left:8px}
+.subs{margin-top:22px}
+.d-h{display:flex;align-items:baseline;gap:8px;font-size:22px;font-weight:400;margin:18px 0 2px}
+.subs .d-h:first-child{margin-top:0}
+.sub-input{flex:1;min-width:0;background:transparent;border:0;border-radius:8px;color:var(--ink);font:inherit;font-size:16.5px;padding:10px 6px}
+.sub-input:focus{background:var(--bg)}
+.row.done .sub-input{text-decoration:line-through;text-decoration-color:var(--faint);color:var(--faint)}
+.icon-btn.sm{width:40px;height:40px}
+.sub-empty{color:var(--faint);padding:10px 2px;font-size:15px}
+#sub-form{margin:12px 0 4px}
 a.btn{text-decoration:none}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:6px;color:var(--ink);font-size:15.5px;cursor:pointer}
 .chk input{width:22px;height:22px;accent-color:var(--accent);flex:none}

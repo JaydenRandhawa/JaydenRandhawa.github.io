@@ -21,6 +21,8 @@ const P = {
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
+  pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+  list: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
 };
@@ -52,6 +54,7 @@ let state = null;                 // { title, titleAt, tasks:[] }  (tasks may in
 let session = { pass: null, salt: null };
 let keyCache = new Map();
 let editingId = null, formKind = 'task', lastToggled = null, dayKey = todayStr();
+let detailId = null, backTo = null, lastSub = null;
 
 function loadSettings() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(SKEY) || '{}') }; } catch { return { ...DEFAULTS }; } }
 function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {} }
@@ -77,7 +80,9 @@ function normTask(t) {
     allDay: t.allDay !== false,
     startTime: validTime(t.startTime),
     endTime: validTime(t.endTime),
-    linkId: String(t.linkId || '')
+    linkId: String(t.linkId || ''),
+    subs: (Array.isArray(t.subs) ? t.subs : []).filter(x => x && typeof x === 'object' && String(x.title || '').trim()).slice(0, 100)
+      .map(x => ({ id: String(x.id || uid()), title: String(x.title).slice(0, 200), done: !!x.done, doneAt: x.done ? (+x.doneAt || null) : null }))
   };
 }
 function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0, base: c && /^https?:\/\/\S+$/.test(c.base || '') ? c.base.replace(/\/+$/, '') : '' }; }
@@ -110,9 +115,11 @@ function mergeStates(a, b) {
   const useB = (b.titleAt || 0) > (a.titleAt || 0);
   return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, tasks: [...map.values()] };
 }
+const stableJSON = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x)
+  ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x);
 const canon = s => JSON.stringify({
   t: s.title, a: s.titleAt, c: s.cal.token + '|' + s.cal.at + '|' + s.cal.base,
-  k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(t => JSON.stringify(t, Object.keys(t).sort()))
+  k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(stableJSON)
 });
 
 /* =====================================================================
@@ -232,7 +239,7 @@ async function onRemote(snap) {
   }
   sync.blocked = false;
   const merged = mergeStates(state, remote), cm = canon(merged);
-  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); if (!$('#m-cal').hidden) refreshCal(); }
+  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); if (!$('#m-cal').hidden) refreshCal(); if (!$('#m-detail').hidden && !$('#m-detail').contains(document.activeElement)) renderDetail(); }
   if (cm !== canon(remote)) schedulePush(0); else setStatus('synced');
 }
 function schedulePush(delay = 800) { if (!sync.ref) return; clearTimeout(sync.pushT); sync.pushT = setTimeout(pushNow, delay); }
@@ -342,6 +349,7 @@ function rowHTML(t, showTag, secId) {
     const txt = g > 0 ? `${g}d buffer` : g === 0 ? 'Same-day' : `${-g}d after due`;
     meta += `<span class="pill ${g < 0 ? 'red' : ''}" title="Gap between your to-do date and the due date">${txt}</span>`;
   }
+  if (t.subs.length) { const dn = t.subs.filter(x => x.done).length; meta += `<span class="pill ${dn === t.subs.length ? 'green' : ''}" title="Subtasks done">${ic('list', 12)}${dn}/${t.subs.length}</span>`; }
   const lr = t.linkId ? find(t.linkId) : null;
   if (lr && lr.kind === 'reminder') meta += `<button type="button" class="pill" data-action="open-link" data-link="${esc(lr.id)}" title="Linked reminder">${ic('link', 12)}<span class="ell">${esc(lr.title)}</span></button>`;
   if (t.kind === 'reminder') { const n = state.tasks.filter(x => !x.deleted && x.linkId === t.id).length; if (n) meta += `<span class="pill" title="Tasks linked to this reminder">${ic('link', 12)}${n} linked</span>`; }
@@ -350,11 +358,12 @@ function rowHTML(t, showTag, secId) {
   if (done && t.completedAt) meta += `<span class="pill">Done ${fmt(ymd(new Date(t.completedAt)))}</span>`;
   return `<li class="row ${done ? 'done' : ''} ${u === 'overdue' ? 'overdue' : ''} ${u === 'soon' ? 'soon' : ''} ${lastToggled === t.id ? 'just' : ''}" data-id="${esc(t.id)}">
     <button type="button" class="check" data-action="toggle" aria-pressed="${done}" aria-label="${done ? 'Mark not done' : 'Mark done'}: ${esc(t.title)}"><span class="box">${done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="24" d="M20 6 9 17l-5-5"/></svg>' : ''}</span></button>
-    <div class="row-body" data-action="edit" role="button" tabindex="0" aria-label="Edit ${esc(t.title)}">
+    <div class="row-body" data-action="open" role="button" tabindex="0" aria-label="Open ${esc(t.title)}">
       <div class="row-title">${esc(t.title)}</div>
       ${t.notes ? `<div class="row-notes">${esc(t.notes)}</div>` : ''}
       ${meta ? `<div class="meta">${meta}</div>` : ''}
     </div>
+    <button type="button" class="row-edit" data-action="edit" aria-label="Edit ${esc(t.title)}" title="Edit">${ic('pencil', 17)}</button>
   </li>`;
 }
 function sectionHTML(s, list) {
@@ -455,7 +464,8 @@ function clearCompleted() {
 function addSamples() {
   const add = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
   [
-    { title: 'MTE502 Lab 3 Code', notes: 'Add X and Y value outputs', tag: 'MTE502', status: 'progress', todoDate: add(0), dueDate: add(3), cal: true },
+    { title: 'MTE502 Lab 3 Code', notes: 'Add X and Y value outputs', tag: 'MTE502', status: 'progress', todoDate: add(0), dueDate: add(3), cal: true,
+      subs: [{ title: 'Write the X output', done: true, doneAt: Date.now() }, { title: 'Add the Y output' }, { title: 'Test it on the board' }] },
     { title: 'MEC713 problem set 4', tag: 'MEC713', status: 'scheduled', todoDate: add(1), dueDate: add(1) },
     { title: 'EES612 reading notes', tag: 'EES612', status: 'scheduled', todoDate: add(-3), dueDate: add(-1) },
     { title: 'Update résumé for Co-Op postings', tag: 'Co-Op', status: 'unorganized' },
@@ -469,7 +479,7 @@ function addSamples() {
    Modals
    ===================================================================== */
 const openModal = id => { $('#' + id).hidden = false; document.body.classList.add('modal-open'); };
-function closeModals() { $$('.overlay').forEach(o => o.hidden = true); document.body.classList.remove('modal-open'); }
+function closeModals() { $$('.overlay').forEach(o => o.hidden = true); document.body.classList.remove('modal-open'); backTo = null; }
 let formAllDay = true;
 function setAllDay(v) {
   formAllDay = v;
@@ -536,7 +546,69 @@ function saveTask() {
   } else {
     state.tasks.push(normTask({ ...v, completedAt: v.status === 'completed' ? Date.now() : null }));
   }
+  const back = backTo;
   closeModals(); commit();
+  if (back && find(back)) openDetail(back);
+}
+
+/* ---------- expanded task view + subtasks ---------- */
+const CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="24" d="M20 6 9 17l-5-5"/></svg>';
+const relDay = d => { const n = diffDays(d, todayStr()); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : n === -1 ? 'yesterday' : n > 0 ? `in ${n} days` : `${-n} days ago`; };
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function openDetail(id) { if (!find(id)) return; detailId = id; renderDetail(); openModal('m-detail'); }
+function detailInfo(t) {
+  const done = t.status === 'completed', u = urgency(t), tone = u === 'overdue' ? 'red' : u === 'soon' ? 'amber' : '', today = todayStr();
+  const row = (label, val, cls = '') => `<div class="d-row"><dt>${label}</dt><dd class="${cls}">${val}</dd></div>`;
+  let rows = '';
+  if (t.todoDate) {
+    const late = diffDays(t.todoDate, today) < 0;
+    rows += row(t.kind === 'reminder' ? 'Reminder date' : 'To-do date', `${esc(fmt(t.todoDate))}<span class="rel">${relDay(t.todoDate)}</span>`, done ? '' : t.dueDate ? (late ? 'amber' : '') : tone);
+  }
+  if (t.kind === 'reminder' && t.todoDate) rows += row('Time', !t.allDay && t.startTime && t.endTime ? `${fmtTime(t.startTime)} – ${fmtTime(t.endTime)}` : 'All day');
+  if (t.dueDate) rows += row('Due date', `${esc(fmt(t.dueDate))}<span class="rel">${relDay(t.dueDate)}</span>`, done ? '' : tone);
+  if (t.todoDate && t.dueDate && !done) {
+    const g = diffDays(t.dueDate, t.todoDate);
+    rows += row('Buffer', g > 0 ? `${plural(g, 'day')} between to-do and due` : g === 0 ? 'Same day' : `${plural(-g, 'day')} after the due date`, g < 0 ? 'red' : '');
+  }
+  if (!t.todoDate && !t.dueDate) rows += row('Dates', 'Not set yet');
+  rows += row('Status', done ? 'Completed' + (t.completedAt ? ' ' + esc(fmt(ymd(new Date(t.completedAt)))) : '') : { unorganized: 'Unorganized', scheduled: 'Scheduled', progress: 'In progress' }[t.status]);
+  let pills = '';
+  if (t.tag) pills += `<span class="pill"><i class="dot" style="background:${tagColor(t.tag)}"></i>${esc(t.tag)}</span>`;
+  const lr = t.linkId ? find(t.linkId) : null;
+  if (lr && lr.kind === 'reminder') pills += `<button type="button" class="pill" data-action="open-link" data-link="${esc(lr.id)}" title="Open linked reminder">${ic('link', 12)}<span class="ell">${esc(lr.title)}</span></button>`;
+  if (t.kind === 'reminder') state.tasks.filter(x => !x.deleted && x.linkId === t.id).forEach(x => { pills += `<button type="button" class="pill" data-action="open-link" data-link="${esc(x.id)}" title="Open linked task">${ic('link', 12)}<span class="ell">${esc(x.title)}</span></button>`; });
+  if (t.cal && !done && (t.todoDate || t.dueDate) && !taskSuppressed(t)) pills += `<span class="pill accent">${ic('cal', 12)}On calendar</span>`;
+  return `${t.notes ? `<p class="d-notes">${esc(t.notes)}</p>` : ''}<dl class="d-dates">${rows}</dl>${pills ? `<div class="meta">${pills}</div>` : ''}`;
+}
+function subHTML(sb, done) {
+  return `<li class="row ${done ? 'done' : ''} ${lastSub === sb.id ? 'just' : ''}" data-sid="${esc(sb.id)}">
+    <button type="button" class="check" data-action="sub-toggle" aria-pressed="${done}" aria-label="${done ? 'Mark not done' : 'Mark done'}: ${esc(sb.title)}"><span class="box">${done ? CHECK_SVG : ''}</span></button>
+    <input class="sub-input" value="${esc(sb.title)}" maxlength="200" aria-label="Subtask title" enterkeyhint="done">
+    <button type="button" class="icon-btn sm" data-action="sub-del" aria-label="Delete subtask: ${esc(sb.title)}">${ic('x', 16)}</button>
+  </li>`;
+}
+function renderDetail() {
+  const t = detailId && find(detailId);
+  if (!t) { detailId = null; if (!$('#m-detail').hidden) closeModals(); return; }
+  $('#d-title').textContent = t.title;
+  $('#d-info').innerHTML = detailInfo(t);
+  const open = t.subs.filter(x => !x.done), dn = t.subs.filter(x => x.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  $('#d-count').textContent = t.subs.length ? `${dn.length}/${t.subs.length}` : '';
+  $('#d-active').innerHTML = open.length ? open.map(x => subHTML(x, false)).join('') : `<li class="sub-empty">${t.subs.length ? 'All subtasks are done.' : 'No subtasks yet.'}</li>`;
+  $('#d-done-wrap').hidden = !dn.length; $('#d-done-count').textContent = dn.length;
+  $('#d-done').innerHTML = dn.map(x => subHTML(x, true)).join('');
+  $('#d-toggle').textContent = t.status === 'completed' ? 'Mark not done' : 'Mark task done';
+  lastSub = null;
+}
+function subToggle(sid) {
+  const t = find(detailId), sb = t && t.subs.find(x => x.id === sid); if (!sb) return;
+  sb.done = !sb.done; sb.doneAt = sb.done ? Date.now() : null;
+  if (sb.done) { lastSub = sid; playDone(); }
+  touch(t); commit(); renderDetail();
+}
+function subDelete(sid) {
+  const t = find(detailId); if (!t) return;
+  t.subs = t.subs.filter(x => x.id !== sid); touch(t); commit(); renderDetail();
 }
 function refreshLockUI() {
   const on = !!session.pass;
@@ -745,7 +817,12 @@ document.addEventListener('click', async e => {
     case 'uncal': { const k = find(id); if (k) { k.cal = false; touch(k); commit(); } break; }
     case 'open-cal': openCal(); break;
     case 'allday': setAllDay(el.dataset.val === '1'); break;
-    case 'open-link': openTask(el.dataset.link); break;
+    case 'open-link': openDetail(el.dataset.link); break;
+    case 'open': openDetail(id); break;
+    case 'detail-edit': { const did = detailId; closeModals(); backTo = did; openTask(did); break; }
+    case 'detail-toggle': toggleDone(detailId); renderDetail(); break;
+    case 'sub-toggle': subToggle(el.closest('[data-sid]').dataset.sid); break;
+    case 'sub-del': subDelete(el.closest('[data-sid]').dataset.sid); break;
     case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { ...state.cal, token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
     case 'cal-regen': if (confirm('Make a new link? Calendars subscribed to the old link will stop updating.')) newFeedToken(); break;
     case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { ...state.cal, token: '', at: Date.now() }; commit(); refreshCal(); } break;
@@ -755,6 +832,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModals();
+  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('sub-input')) { e.preventDefault(); e.target.blur(); }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.row-body')) { e.preventDefault(); e.target.click(); }
 });
 $('#cal-base').addEventListener('change', e => {
@@ -763,6 +841,21 @@ $('#cal-base').addEventListener('change', e => {
   state.cal = { ...state.cal, base: v, at: Date.now() }; settings.feedBase = ''; saveSettings(); commit(); refreshCal();
 });
 $('#f-link').addEventListener('change', updateLinkUI);
+document.addEventListener('change', e => {
+  const inp = e.target; if (!inp.classList || !inp.classList.contains('sub-input')) return;
+  const t = find(detailId), sb = t && t.subs.find(x => x.id === inp.closest('[data-sid]').dataset.sid); if (!sb) return;
+  const v = inp.value.trim();
+  if (!v) { inp.value = sb.title; return; }
+  sb.title = v.slice(0, 200); touch(t); commit();
+});
+$('#sub-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const inp = $('#sub-new'), v = inp.value.trim(), t = find(detailId);
+  if (!v || !t) return;
+  if (t.subs.length >= 100) { toast('That is the limit of 100 subtasks.'); return; }
+  t.subs.push({ id: uid(), title: v.slice(0, 200), done: false, doneAt: null });
+  touch(t); inp.value = ''; commit(); renderDetail(); inp.focus();
+});
 $('#opt-sound').addEventListener('change', e => { settings.sound = e.target.checked; saveSettings(); if (settings.sound) playDone(); });
 $('#title').addEventListener('blur', e => { if (state && !e.target.value.trim()) { e.target.value = 'TODO'; state.title = 'TODO'; state.titleAt = Date.now(); document.title = 'TODO'; save(); } });
 $('#task-form').addEventListener('submit', e => { e.preventDefault(); saveTask(); });
