@@ -539,22 +539,23 @@ function runRecurring() {
       const end = recEnd(rc);
       let last = rc.dayOnly ? today : addDays(today, REC_AHEAD - 1);
       if (end && end < last) last = end;
-      const from = [rc.start, rc.gen ? addDays(rc.gen, 1) : '', addDays(today, -REC_BACK)].sort().pop();
+      // Day-only tasks exist for their own day only, so days already gone are never created late.
+      const from = [rc.start, rc.gen ? addDays(rc.gen, 1) : '', rc.dayOnly ? today : addDays(today, -REC_BACK)].sort().pop();
       for (let d = from; d <= last; d = addDays(d, 1)) {
         if (!rc.days.includes(parseD(d).getDay())) continue;
         const id = `rec-${rc.id}-${d}`;
         if (ids.has(id)) continue;
         ids.add(id);
         fresh.push(normTask({ id, title: rc.title, notes: rc.notes, tag: rm.tag, kind: 'task', status: 'scheduled',
-          todoDate: rc.dayOnly && d < today ? today : d, recId: rc.id, recFrom: rm.id, recDay: rc.dayOnly }));
+          todoDate: d, recId: rc.id, recFrom: rm.id, recDay: rc.dayOnly }));
       }
       if (last > (rc.gen || '')) { rc.gen = last; touch(rm); changed = true; }
     }
   }
   if (fresh.length) { state.tasks.push(...fresh); changed = true; }
-  // "Only on the day" tasks that weren't finished move to the current day.
-  for (const t of state.tasks) {
-    if (!t.deleted && t.recDay && t.status !== 'completed' && t.todoDate && t.todoDate < today) { t.todoDate = today; touch(t); changed = true; }
+  // "Only on the day" tasks disappear once their day has passed, done or not. (The tombstone keeps them from being recreated.)
+  for (const t of [...state.tasks]) {
+    if (!t.deleted && t.recDay && t.todoDate && t.todoDate < today) { deleteTask(t.id); changed = true; }
   }
   return changed;
 }
