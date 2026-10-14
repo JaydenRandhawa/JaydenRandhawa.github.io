@@ -27,7 +27,8 @@ const P = {
   pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
   list: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>'
 };
 const ic = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 
@@ -36,6 +37,7 @@ const pad = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const todayStr = () => ymd(new Date());
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return ymd(d); };
 const diffDays = (a, b) => Math.round((parseD(a) - parseD(b)) / DAY); // a - b
 const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 const validTime = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(s || '') ? s : '';
@@ -63,6 +65,19 @@ function loadSettings() { try { return { ...DEFAULTS, ...JSON.parse(localStorage
 function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {} }
 
 const STATUSES = ['unorganized', 'scheduled', 'progress', 'completed'];
+/* A recurring rule lives on a reminder: { id, title, notes, days:[0-6 (Sun=0)], weeks (0 = indefinite), start, dayOnly, gen (last day generated through) } */
+function normRec(r) {
+  return {
+    id: String(r.id || uid()),
+    title: String(r.title || '').trim().slice(0, 200),
+    notes: String(r.notes || '').slice(0, 2000),
+    days: [...new Set((Array.isArray(r.days) ? r.days : []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort(),
+    weeks: Math.max(0, Math.min(520, Math.floor(+r.weeks || 0))),
+    start: validDate(r.start) || todayStr(),
+    dayOnly: !!r.dayOnly,
+    gen: validDate(r.gen)
+  };
+}
 function normTask(t) {
   const id = String(t.id || uid());
   if (t.deleted) return { id, deleted: true, updatedAt: +t.updatedAt || Date.now() };
@@ -84,6 +99,10 @@ function normTask(t) {
     startTime: validTime(t.startTime),
     endTime: validTime(t.endTime),
     linkId: String(t.linkId || ''),
+    recs: (Array.isArray(t.recs) ? t.recs : []).filter(x => x && typeof x === 'object').map(normRec).filter(x => x.title && x.days.length).slice(0, 20),
+    recId: String(t.recId || ''),
+    recFrom: String(t.recFrom || ''),
+    recDay: !!t.recDay,
     subs: (Array.isArray(t.subs) ? t.subs : []).filter(x => x && typeof x === 'object' && String(x.title || '').trim()).slice(0, 100)
       .map(x => ({ id: String(x.id || uid()), title: String(x.title).slice(0, 200), done: !!x.done, doneAt: x.done ? (+x.doneAt || null) : null }))
   };
@@ -170,7 +189,7 @@ async function flush(opts = {}) {
   } catch (e) { toast('Could not save on this device. Storage may be full or blocked.'); return; }
   if (!opts.noPush) schedulePush();
 }
-const commit = () => { render(); save(); };
+const commit = () => { runRecurring(); render(); save(); };
 
 /* =====================================================================
    Cloud sync (Firestore, loaded on demand)
@@ -242,8 +261,10 @@ async function onRemote(snap) {
     return;
   }
   sync.blocked = false;
-  const merged = mergeStates(state, remote), cm = canon(merged);
-  if (cm !== canon(state)) { state = merged; render(); await flush({ noPush: true }); if (!$('#m-cal').hidden) refreshCal(); if (!$('#m-detail').hidden && !$('#m-detail').contains(document.activeElement)) renderDetail(); }
+  const before = canon(state);
+  state = mergeStates(state, remote); runRecurring();
+  const cm = canon(state);
+  if (cm !== before) { render(); await flush({ noPush: true }); if (!$('#m-cal').hidden) refreshCal(); if (!$('#m-detail').hidden && !$('#m-detail').contains(document.activeElement)) renderDetail(); }
   if (cm !== canon(remote)) schedulePush(0); else setStatus('synced');
 }
 function schedulePush(delay = 800) { if (!sync.ref) return; clearTimeout(sync.pushT); sync.pushT = setTimeout(pushNow, delay); }
@@ -356,6 +377,8 @@ function rowHTML(t, showTag, secId) {
   if (t.subs.length) { const dn = t.subs.filter(x => x.done).length; meta += `<span class="pill ${dn === t.subs.length ? 'green' : ''}" title="Subtasks done">${ic('list', 12)}${dn}/${t.subs.length}</span>`; }
   const lr = t.linkId ? find(t.linkId) : null;
   if (lr && lr.kind === 'reminder') meta += `<button type="button" class="pill" data-action="open-link" data-link="${esc(lr.id)}" title="Linked reminder">${ic('link', 12)}<span class="ell">${esc(lr.title)}</span></button>`;
+  meta += recPill(t);
+  if (t.kind === 'reminder' && t.recs.length && !done) meta += `<span class="pill" title="Recurring tasks generated from this reminder">${ic('repeat', 12)}${t.recs.length} recurring</span>`;
   if (t.kind === 'reminder') { const n = state.tasks.filter(x => !x.deleted && x.linkId === t.id).length; if (n) meta += `<span class="pill" title="Tasks linked to this reminder">${ic('link', 12)}${n} linked</span>`; }
   if (secId === 'todo') meta += `<button type="button" class="pill ${t.status === 'progress' ? 'accent' : ''}" data-action="cycle" title="Change status">${t.status === 'progress' ? 'In progress' : 'Scheduled'}</button>`;
   if (t.cal && !done && (t.todoDate || t.dueDate) && !taskSuppressed(t)) meta += `<button type="button" class="pill accent" data-action="uncal" title="Remove from calendar feed">${ic('cal', 12)}On calendar</button>`;
@@ -482,6 +505,115 @@ function addSamples() {
 }
 
 /* =====================================================================
+   Recurring tasks (generated from a reminder)
+   ===================================================================== */
+const REC_AHEAD = 7;   // normal rules create tasks this many days ahead (today included)
+const REC_BACK = 60;   // catch-up limit if the app wasn't opened for a long time
+const DOWN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const recEnd = rc => rc.weeks ? addDays(rc.start, rc.weeks * 7 - 1) : '';
+function recDaysText(days) {
+  const s = [...days].sort((x, y) => x - y).join('');
+  if (s === '0123456') return 'Every day';
+  if (s === '12345') return 'Weekdays';
+  if (s === '06') return 'Weekends';
+  return [1, 2, 3, 4, 5, 6, 0].filter(d => days.includes(d)).map(d => DOWN[d]).join(', ');
+}
+const recPill = t => {
+  const rf = t.recFrom ? find(t.recFrom) : null;
+  return rf && rf.kind === 'reminder' ? `<button type="button" class="pill" data-action="open-link" data-link="${esc(rf.id)}" title="Generated by a recurring task">${ic('repeat', 12)}<span class="ell">${esc(rf.title)}</span></button>` : '';
+};
+/* Idempotent. Task ids are derived from rule + date, so devices that both generate merge into one task.
+   Each day's task is independent: finishing one never affects the next. */
+function runRecurring() {
+  if (!state) return false;
+  const today = todayStr(), yesterday = addDays(today, -1);
+  const ids = new Set(state.tasks.map(t => t.id)); // includes tombstones, so deleted tasks are not recreated
+  const fresh = []; let changed = false;
+  for (const rm of state.tasks) {
+    if (rm.deleted || rm.kind !== 'reminder' || !rm.recs.length) continue;
+    for (const rc of rm.recs) {
+      if (rm.status === 'completed') { // generation stops; skip the paused days so they aren't backfilled later
+        if (rc.gen < yesterday) { rc.gen = yesterday; touch(rm); changed = true; }
+        continue;
+      }
+      const end = recEnd(rc);
+      let last = rc.dayOnly ? today : addDays(today, REC_AHEAD - 1);
+      if (end && end < last) last = end;
+      const from = [rc.start, rc.gen ? addDays(rc.gen, 1) : '', addDays(today, -REC_BACK)].sort().pop();
+      for (let d = from; d <= last; d = addDays(d, 1)) {
+        if (!rc.days.includes(parseD(d).getDay())) continue;
+        const id = `rec-${rc.id}-${d}`;
+        if (ids.has(id)) continue;
+        ids.add(id);
+        fresh.push(normTask({ id, title: rc.title, notes: rc.notes, tag: rm.tag, kind: 'task', status: 'scheduled',
+          todoDate: rc.dayOnly && d < today ? today : d, recId: rc.id, recFrom: rm.id, recDay: rc.dayOnly }));
+      }
+      if (last > (rc.gen || '')) { rc.gen = last; touch(rm); changed = true; }
+    }
+  }
+  if (fresh.length) { state.tasks.push(...fresh); changed = true; }
+  // "Only on the day" tasks that weren't finished move to the current day.
+  for (const t of state.tasks) {
+    if (!t.deleted && t.recDay && t.status !== 'completed' && t.todoDate && t.todoDate < today) { t.todoDate = today; touch(t); changed = true; }
+  }
+  return changed;
+}
+let recFor = null, recDays = new Set();
+function setRecDays(arr) {
+  recDays = new Set(arr);
+  $$('[data-action=dow]').forEach(b => b.setAttribute('aria-pressed', String(recDays.has(+b.dataset.val))));
+}
+function syncRecForever() { $('#r-weeks').disabled = $('#r-forever').checked; }
+function openRec(rid) {
+  const rm = find(rid); if (!rm) return;
+  recFor = rid;
+  $('#r-for').textContent = `Creates a task from “${rm.title}” on the days you pick.`;
+  $('#r-title').value = ''; $('#r-notes').value = '';
+  setRecDays([1, 2, 3, 4, 5]);
+  $('#r-start').value = todayStr(); $('#r-start').min = todayStr();
+  $('#r-weeks').value = 4; $('#r-forever').checked = false; syncRecForever();
+  $('#r-day').checked = false;
+  openModal('m-rec');
+  setTimeout(() => $('#r-title').focus(), 30);
+}
+function saveRec() {
+  const rm = find(recFor); if (!rm) { closeModals(); return; }
+  const title = $('#r-title').value.trim();
+  if (!title) { $('#r-title').focus(); toast('Give the recurring task a title.'); return; }
+  if (!recDays.size) { toast('Pick at least one day of the week.'); return; }
+  let weeks = 0;
+  if (!$('#r-forever').checked) {
+    weeks = Math.floor(+$('#r-weeks').value);
+    if (!(weeks >= 1 && weeks <= 520)) { toast('Enter 1 to 520 weeks, or choose indefinitely.'); return; }
+  }
+  if (rm.recs.length >= 20) { toast('That is the limit of 20 recurring tasks per reminder.'); return; }
+  rm.recs.push(normRec({ id: uid(), title, notes: $('#r-notes').value.trim(), days: [...recDays], weeks,
+    start: validDate($('#r-start').value) || todayStr(), dayOnly: $('#r-day').checked, gen: '' }));
+  touch(rm);
+  const back = backTo;
+  closeModals(); commit();
+  if (back && find(back)) openDetail(back);
+}
+function recHTML(rc, rm) {
+  const today = todayStr(), end = recEnd(rc), ended = !!end && end < today;
+  let pills = `<span class="pill">${ic('repeat', 12)}${esc(recDaysText(rc.days))}</span>`;
+  pills += `<span class="pill">${rc.weeks ? plural(rc.weeks, 'week') : 'Indefinitely'}</span>`;
+  if (rc.start > today) pills += `<span class="pill">Starts ${esc(fmt(rc.start))}</span>`;
+  if (end && !ended) pills += `<span class="pill">Until ${esc(fmt(end))}</span>`;
+  if (rc.dayOnly) pills += `<span class="pill" title="Each task only shows on its own day">Only on the day</span>`;
+  if (ended) pills += `<span class="pill green">Ended</span>`;
+  else if (rm.status === 'completed') pills += `<span class="pill amber" title="Generation resumes if you mark the reminder not done">Paused, reminder done</span>`;
+  return `<li class="row" data-rid="${esc(rc.id)}">
+    <div class="rec-body">
+      <div class="row-title">${esc(rc.title)}</div>
+      ${rc.notes ? `<div class="row-notes">${esc(rc.notes)}</div>` : ''}
+      <div class="meta">${pills}</div>
+    </div>
+    <button type="button" class="icon-btn sm" data-action="rec-del" aria-label="Stop repeating: ${esc(rc.title)}" title="Stop repeating">${ic('x', 16)}</button>
+  </li>`;
+}
+
+/* =====================================================================
    Modals
    ===================================================================== */
 const openModal = id => { $('#' + id).hidden = false; document.body.classList.add('modal-open'); };
@@ -582,6 +714,7 @@ function detailInfo(t) {
   if (t.tag) pills += `<span class="pill"><i class="dot" style="background:${tagColor(t.tag)}"></i>${esc(t.tag)}</span>`;
   const lr = t.linkId ? find(t.linkId) : null;
   if (lr && lr.kind === 'reminder') pills += `<button type="button" class="pill" data-action="open-link" data-link="${esc(lr.id)}" title="Open linked reminder">${ic('link', 12)}<span class="ell">${esc(lr.title)}</span></button>`;
+  pills += recPill(t);
   if (t.kind === 'reminder') state.tasks.filter(x => !x.deleted && x.linkId === t.id).forEach(x => { pills += `<button type="button" class="pill" data-action="open-link" data-link="${esc(x.id)}" title="Open linked task">${ic('link', 12)}<span class="ell">${esc(x.title)}</span></button>`; });
   if (t.cal && !done && (t.todoDate || t.dueDate) && !taskSuppressed(t)) pills += `<span class="pill accent">${ic('cal', 12)}On calendar</span>`;
   return `${t.notes ? `<p class="d-notes">${esc(t.notes)}</p>` : ''}<dl class="d-dates">${rows}</dl>${pills ? `<div class="meta">${pills}</div>` : ''}`;
@@ -604,6 +737,12 @@ function renderDetail() {
   $('#d-done-wrap').hidden = !dn.length; $('#d-done-count').textContent = dn.length;
   $('#d-done').innerHTML = dn.map(x => subHTML(x, true)).join('');
   $('#d-toggle').textContent = t.status === 'completed' ? 'Mark not done' : 'Mark task done';
+  const isRem = t.kind === 'reminder';
+  $('#d-rec').hidden = !isRem;
+  if (isRem) {
+    $('#d-rec-count').textContent = t.recs.length || '';
+    $('#d-rec-list').innerHTML = t.recs.length ? t.recs.map(rc => recHTML(rc, t)).join('') : '<li class="sub-empty">Nothing repeating yet.</li>';
+  }
   lastSub = null;
 }
 function subToggle(sid) {
@@ -830,6 +969,14 @@ document.addEventListener('click', async e => {
     case 'detail-toggle': toggleDone(detailId); renderDetail(); break;
     case 'sub-toggle': subToggle(el.closest('[data-sid]').dataset.sid); break;
     case 'sub-del': subDelete(el.closest('[data-sid]').dataset.sid); break;
+    case 'rec-new': { const did = detailId; closeModals(); backTo = did; openRec(did); break; }
+    case 'rec-del': {
+      const k = find(detailId), rid = el.closest('[data-rid]').dataset.rid;
+      if (k && confirm('Stop repeating this task? Tasks already created stay on your list.')) { k.recs = k.recs.filter(x => x.id !== rid); touch(k); commit(); renderDetail(); }
+      break;
+    }
+    case 'dow': { const n = +el.dataset.val; if (recDays.has(n)) recDays.delete(n); else recDays.add(n); setRecDays([...recDays]); break; }
+    case 'dow-preset': setRecDays(el.dataset.val === 'all' ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]); break;
     case 'cal-on': if (!sync.db) { toast('Connect cloud sync first.'); break; } state.cal = { ...state.cal, token: genId(), at: Date.now() }; sync.feedErr = ''; commit(); refreshCal(); break;
     case 'cal-regen': if (confirm('Make a new link? Calendars subscribed to the old link will stop updating.')) newFeedToken(); break;
     case 'cal-off': if (confirm('Turn off the calendar feed? Subscribed calendars will stop updating.')) { deleteFeedDoc(state.cal.token); state.cal = { ...state.cal, token: '', at: Date.now() }; commit(); refreshCal(); } break;
@@ -848,6 +995,8 @@ $('#cal-base').addEventListener('change', e => {
   state.cal = { ...state.cal, base: v, at: Date.now() }; settings.feedBase = ''; saveSettings(); commit(); refreshCal();
 });
 $('#f-link').addEventListener('change', updateLinkUI);
+$('#r-forever').addEventListener('change', syncRecForever);
+$('#rec-form').addEventListener('submit', e => { e.preventDefault(); saveRec(); });
 document.addEventListener('change', e => {
   const inp = e.target; if (!inp.classList || !inp.classList.contains('sub-input')) return;
   const t = find(detailId), sb = t && t.subs.find(x => x.id === inp.closest('[data-sid]').dataset.sid); if (!sb) return;
@@ -888,7 +1037,7 @@ $('#file').addEventListener('change', async e => {
 });
 window.addEventListener('pagehide', () => { if (dirty) flush(); });
 window.addEventListener('online', () => { if (settings.sync && state && sync.status === 'error') connectSync(); });
-const dayCheck = () => { if (state && dayKey !== todayStr()) render(); };
+const dayCheck = () => { if (state && dayKey !== todayStr()) commit(); };
 document.addEventListener('visibilitychange', () => { if (!document.hidden) dayCheck(); });
 setInterval(dayCheck, 60000);
 
@@ -912,7 +1061,7 @@ function initDisplay() {
 }
 function startApp() {
   $('#app').hidden = false;
-  refreshLockUI(); render(); paintStatus();
+  refreshLockUI(); if (runRecurring()) save(); render(); paintStatus();
   if (settings.sync) connectSync();
 }
 function boot() {

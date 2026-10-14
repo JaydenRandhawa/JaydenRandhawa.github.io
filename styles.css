@@ -175,3 +175,11 @@ body[data-sync=synced] .clock b::before{background:var(--green)}
 body[data-sync=syncing] .clock b::before,body[data-sync=connecting] .clock b::before{background:var(--amber)}
 body[data-sync=error] .clock b::before{background:var(--red)}
 .all-clear{font-size:30px;text-align:center;padding:90px 0;grid-column:1/-1}
+
+/* ---------- recurring tasks ---------- */
+.dow{display:flex;gap:6px}
+.dow .chip{flex:1;min-width:0;padding:6px 0;text-align:center}
+.rec-presets{display:flex;gap:16px;font-size:14px}
+.rec-body{flex:1;min-width:0;padding:11px 4px 11px 6px}
+.rec-body .row-title{font-size:16.5px}
+.fld input:disabled{opacity:.45}

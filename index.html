@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Delius&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -78,6 +78,11 @@
         <ul id="d-done"></ul>
       </div>
     </section>
+    <section class="subs" id="d-rec" hidden>
+      <h3 class="hand d-h">Recurring tasks <span id="d-rec-count" class="grp-n"></span></h3>
+      <ul id="d-rec-list"></ul>
+      <div class="row-btns"><button type="button" class="btn" data-action="rec-new">Generate recurring task</button></div>
+    </section>
     <div class="sheet-foot" style="margin-top:18px"><span class="grow"></span><button type="button" class="btn" id="d-toggle" data-action="detail-toggle">Mark task done</button></div>
   </div>
 </div>
@@ -134,6 +139,46 @@
       <span class="grow"></span>
       <button type="button" class="btn" data-action="close">Cancel</button>
       <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Recurring task modal -->
+<div id="m-rec" class="overlay" hidden>
+  <form id="rec-form" class="sheet" role="dialog" aria-modal="true" aria-labelledby="rec-heading" autocomplete="off">
+    <div class="sheet-head">
+      <h2 id="rec-heading" class="hand">Recurring task</h2>
+      <button type="button" class="icon-btn" data-action="close" aria-label="Close"><span data-ic="x" data-s="20"></span></button>
+    </div>
+    <p class="hint" id="r-for"></p>
+    <label class="fld"><span>Task title</span><input id="r-title" maxlength="200" placeholder="Apply for 2 jobs"></label>
+    <label class="fld"><span>Details</span><textarea id="r-notes" rows="2" placeholder="Optional"></textarea></label>
+    <div class="fld"><span>Repeat on</span>
+      <div class="dow" role="group" aria-label="Days of the week">
+        <button type="button" class="chip" data-action="dow" data-val="1" aria-pressed="true">Mon</button>
+        <button type="button" class="chip" data-action="dow" data-val="2" aria-pressed="true">Tue</button>
+        <button type="button" class="chip" data-action="dow" data-val="3" aria-pressed="true">Wed</button>
+        <button type="button" class="chip" data-action="dow" data-val="4" aria-pressed="true">Thu</button>
+        <button type="button" class="chip" data-action="dow" data-val="5" aria-pressed="true">Fri</button>
+        <button type="button" class="chip" data-action="dow" data-val="6" aria-pressed="false">Sat</button>
+        <button type="button" class="chip" data-action="dow" data-val="0" aria-pressed="false">Sun</button>
+      </div>
+      <div class="rec-presets">
+        <button type="button" class="link" data-action="dow-preset" data-val="weekdays">Weekdays</button>
+        <button type="button" class="link" data-action="dow-preset" data-val="all">Every day</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>Starts</span><input id="r-start" type="date"></label>
+      <label class="fld"><span>Repeat for (weeks)</span><input id="r-weeks" type="number" inputmode="numeric" min="1" max="520" step="1" value="4"></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="r-forever"><span>Repeat indefinitely</span></label>
+    <label class="chk"><input type="checkbox" id="r-day"><span>Only add each task on its day</span></label>
+    <p class="hint">Off: the next 7 days of tasks are added ahead of time. On: each task appears only on its own day, and if it isn't done by the end of the day it moves to the current day. Finishing one day's task never affects the next. Repeating stops when the weeks run out or this reminder is marked done.</p>
+    <div class="sheet-foot">
+      <span class="grow"></span>
+      <button type="button" class="btn" data-action="close">Cancel</button>
+      <button type="submit" class="btn primary">Create</button>
     </div>
   </form>
 </div>
@@ -273,6 +318,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
