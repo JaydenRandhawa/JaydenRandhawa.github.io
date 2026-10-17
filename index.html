@@ -13,6 +13,14 @@
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
 <link rel="stylesheet" href="styles.css?v=4">
+<style>
+/* Streak pill: neutral at 0, orange once a streak is running. Tweak the three colours here. */
+:root { --streak: #c2410c; --streak-bg: #ffedd5; --streak-bd: #fdba74; }
+@media (prefers-color-scheme: dark) { :root { --streak: #fdba74; --streak-bg: rgba(251, 146, 60, .16); --streak-bd: rgba(251, 146, 60, .45); } }
+.pill.streak svg { flex: none; }
+.pill.streak.hot { color: var(--streak); background: var(--streak-bg); border-color: var(--streak-bd); font-weight: 600; }
+.pill.streak.hot svg { fill: currentColor; fill-opacity: .28; }
+</style>
 </head>
 <body>
 
@@ -318,6 +326,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
