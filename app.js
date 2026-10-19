@@ -136,6 +136,13 @@ function mergeStates(a, b) {
     const c = map.get(t.id);
     if (!c || t.updatedAt > c.updatedAt) map.set(t.id, t);
   }
+  // Streak history only grows when merging: a stale copy of a reminder must never erase completion dates the other copy has.
+  // (syncStreaks removes a date again if its task was genuinely un-ticked.)
+  const hist = new Map();
+  for (const t of [...a.tasks, ...b.tasks]) if (!t.deleted && t.kind === 'reminder') for (const rc of t.recs) { const k = t.id + '|' + rc.id; hist.set(k, (hist.get(k) || []).concat(rc.done)); }
+  for (const t of map.values()) if (!t.deleted && t.kind === 'reminder') for (const rc of t.recs) {
+    const h = hist.get(t.id + '|' + rc.id); if (h) rc.done = [...new Set([...rc.done, ...h])].sort().slice(-800);
+  }
   const useB = (b.titleAt || 0) > (a.titleAt || 0);
   return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, tasks: [...map.values()] };
 }
@@ -1009,7 +1016,11 @@ document.addEventListener('click', async e => {
     case 'rec-new': { const did = detailId; closeModals(); backTo = did; openRec(did); break; }
     case 'rec-del': {
       const k = find(detailId), rid = el.closest('[data-rid]').dataset.rid;
-      if (k && confirm('Stop repeating this task? Tasks already created stay on your list.')) { k.recs = k.recs.filter(x => x.id !== rid); touch(k); commit(); renderDetail(); }
+      if (k && confirm('Stop repeating this task? Its unfinished tasks from today onward are removed. Finished and past tasks stay on your list.')) {
+        const today = todayStr();
+        state.tasks.filter(x => !x.deleted && x.recFrom === k.id && x.recId === rid && x.status !== 'completed' && x.todoDate >= today).forEach(x => deleteTask(x.id));
+        k.recs = k.recs.filter(x => x.id !== rid); touch(k); commit(); renderDetail();
+      }
       break;
     }
     case 'dow': { const n = +el.dataset.val; if (recDays.has(n)) recDays.delete(n); else recDays.add(n); setRecDays([...recDays]); break; }
