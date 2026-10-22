@@ -54,6 +54,7 @@ function fmt(s) {
 /* =====================================================================
    State & settings
    ===================================================================== */
+const SCHEMA = 2; // every cloud write carries this; the Firestore rules reject writes without it, which locks out old copies of the app
 const DEFAULTS = { view: 'category', filterTag: '', collapsed: {}, accountId: '', cfg: null, cfgText: '', sync: false, sound: true };
 let settings = { ...DEFAULTS };
 let state = null;                 // { title, titleAt, tasks:[] }  (tasks may include tombstones)
@@ -311,7 +312,7 @@ async function pushNow() {
   try {
     setStatus('syncing');
     const env = await seal(state);
-    await sync.ref.set({ payload: JSON.stringify(env), updatedAt: Date.now() });
+    await sync.ref.set({ payload: JSON.stringify(env), updatedAt: Date.now(), schema: SCHEMA });
     setStatus('synced');
     pushFeed();
   } catch (e) { setStatus('error', e.message); }
@@ -957,7 +958,7 @@ function buildICS() {
 }
 async function pushFeed() {
   if (!sync.db || !state || !state.cal.token) return;
-  try { await sync.db.collection('paperTodoCal').doc(state.cal.token).set({ ics: buildICS(), updatedAt: Date.now() }); sync.feedErr = ''; }
+  try { await sync.db.collection('paperTodoCal').doc(state.cal.token).set({ ics: buildICS(), updatedAt: Date.now(), schema: SCHEMA }); sync.feedErr = ''; }
   catch (e) { sync.feedErr = e.message; }
   if (!$('#m-cal').hidden) refreshCal();
 }

@@ -245,14 +245,16 @@
 service cloud.firestore {
   match /databases/{db}/documents {
     match /paperTodo/{accountId} {
-      allow get, write: if true;
+      allow get, delete: if true;
+      allow create, update: if request.resource.data.schema == 2;
     }
     match /paperTodoCal/{token} {
-      allow get, write: if true;
+      allow get, delete: if true;
+      allow create, update: if request.resource.data.schema == 2;
     }
   }
 }</pre>
-        <p>These rules let anyone who knows a document's exact name read or write it, but nobody can list the collections. The account ID and the calendar token act as secrets, so keep them private, and turn on the passphrase lock so your list is encrypted.</p>
+        <p>These rules let anyone who knows a document's exact name read or write it (writes must carry <code>schema: 2</code>, which keeps old copies of the app from overwriting your data), but nobody can list the collections. The account ID and the calendar token act as secrets, so keep them private, and turn on the passphrase lock so your list is encrypted.</p>
       </details>
     </section>
 
@@ -326,6 +328,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
