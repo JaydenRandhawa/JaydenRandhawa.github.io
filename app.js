@@ -110,6 +110,28 @@ function normTask(t) {
   };
 }
 function normCal(c) { return { token: c && /^[a-f0-9]{20,64}$/.test(c.token || '') ? c.token : '', at: +(c && c.at) || 0, base: c && /^https?:\/\/\S+$/.test(c.base || '') ? c.base.replace(/\/+$/, '') : '' }; }
+/* Streak dates, stopped rules and rule definitions live at the top level of the state, NOT inside the reminder, and merge by union.
+   That way a stale copy of a reminder (a device that was offline, or running old code) can't erase them. */
+const normDates = a => [...new Set((Array.isArray(a) ? a : []).map(validDate).filter(Boolean))].sort().slice(-800);
+function normStreaks(o) {
+  const r = {};
+  if (o && typeof o === 'object') for (const [k, v] of Object.entries(o).slice(0, 200)) { const d = normDates(v); if (d.length) r[String(k).slice(0, 40)] = d; }
+  return r;
+}
+function normStopped(o) { // rule id -> when it was stopped (forgotten after 90 days)
+  const r = {}, cut = Date.now() - 90 * DAY;
+  if (o && typeof o === 'object') for (const [k, v] of Object.entries(o).slice(0, 200)) if (+v > cut) r[String(k).slice(0, 40)] = +v;
+  return r;
+}
+const ruleCore = rc => { const { gen, done, ...r } = rc; return r; };
+function normRules(o) { // rule id -> { rm: reminder id, rc: the rule without its progress fields }
+  const r = {};
+  if (o && typeof o === 'object') for (const v of Object.values(o).slice(0, 100)) {
+    const rc = v && v.rc && typeof v.rc === 'object' && v.rm ? normRec(v.rc) : null;
+    if (rc && rc.title && rc.days.length) r[rc.id.slice(0, 40)] = { rm: String(v.rm), rc: ruleCore(rc) };
+  }
+  return r;
+}
 function normalizeState(s) {
   s = s || {};
   const cutoff = Date.now() - 30 * DAY;
@@ -117,10 +139,11 @@ function normalizeState(s) {
     title: typeof s.title === 'string' ? (s.title === 'TODO school' && !s.titleAt ? 'TODO' : s.title) : 'TODO',
     titleAt: +s.titleAt || 0,
     cal: normCal(s.cal),
+    epoch: +s.epoch || 0, streaks: normStreaks(s.streaks), stopped: normStopped(s.stopped), rules: normRules(s.rules),
     tasks: (Array.isArray(s.tasks) ? s.tasks : []).filter(t => t && typeof t === 'object').map(normTask).filter(t => !t.deleted || t.updatedAt > cutoff)
   };
 }
-const emptyState = () => ({ title: 'TODO', titleAt: 0, cal: { token: '', at: 0, base: '' }, tasks: [] });
+const emptyState = () => ({ title: 'TODO', titleAt: 0, cal: { token: '', at: 0, base: '' }, epoch: 0, streaks: {}, stopped: {}, rules: {}, tasks: [] });
 const find = id => state.tasks.find(t => t.id === id && !t.deleted);
 const touch = t => { t.updatedAt = Date.now(); };
 function canonTag(tag) {
@@ -131,25 +154,31 @@ function canonTag(tag) {
 
 /* Per-task last-write-wins merge. Deleted tasks stay as tombstones for 30 days. */
 function mergeStates(a, b) {
+  // epoch = when the data was last REPLACED by an import. A copy from before that is discarded, apart from anything edited after it,
+  // so a restored backup isn't mixed back together with the data it replaced.
+  const ea = a.epoch || 0, eb = b.epoch || 0, epoch = Math.max(ea, eb);
+  const live = (t, e) => e === epoch || t.updatedAt > epoch;
+  const sa = ea === epoch, sb = eb === epoch; // which sides' streaks / stopped / rules still count
   const map = new Map();
-  for (const t of [...a.tasks, ...b.tasks]) {
+  for (const t of [...a.tasks.filter(t => live(t, ea)), ...b.tasks.filter(t => live(t, eb))]) {
     const c = map.get(t.id);
     if (!c || t.updatedAt > c.updatedAt) map.set(t.id, t);
   }
-  // Streak history only grows when merging: a stale copy of a reminder must never erase completion dates the other copy has.
+  // Streak dates, stopped rules and rule definitions only ever grow when merging, so no stale copy can remove them.
   // (syncStreaks removes a date again if its task was genuinely un-ticked.)
-  const hist = new Map();
-  for (const t of [...a.tasks, ...b.tasks]) if (!t.deleted && t.kind === 'reminder') for (const rc of t.recs) { const k = t.id + '|' + rc.id; hist.set(k, (hist.get(k) || []).concat(rc.done)); }
-  for (const t of map.values()) if (!t.deleted && t.kind === 'reminder') for (const rc of t.recs) {
-    const h = hist.get(t.id + '|' + rc.id); if (h) rc.done = [...new Set([...rc.done, ...h])].sort().slice(-800);
-  }
+  const streaks = {};
+  for (const x of [sa ? a.streaks : {}, sb ? b.streaks : {}]) for (const [k, v] of Object.entries(x || {})) streaks[k] = normDates([...(streaks[k] || []), ...v]);
+  const stopped = { ...(sa ? a.stopped : {}) };
+  for (const [k, v] of Object.entries(sb ? b.stopped || {} : {})) stopped[k] = Math.max(stopped[k] || 0, v);
+  const rules = { ...(sb ? b.rules : {}), ...(sa ? a.rules : {}) };
   const useB = (b.titleAt || 0) > (a.titleAt || 0);
-  return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, tasks: [...map.values()] };
+  return { title: useB ? b.title : a.title, titleAt: useB ? b.titleAt : a.titleAt, cal: (b.cal.at || 0) > (a.cal.at || 0) ? b.cal : a.cal, epoch, streaks, stopped, rules, tasks: [...map.values()] };
 }
 const stableJSON = v => JSON.stringify(v, (k, x) => x && typeof x === 'object' && !Array.isArray(x)
   ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x);
 const canon = s => JSON.stringify({
   t: s.title, a: s.titleAt, c: s.cal.token + '|' + s.cal.at + '|' + s.cal.base,
+  e: s.epoch || 0, s: stableJSON(s.streaks || {}), p: stableJSON(s.stopped || {}), r: stableJSON(s.rules || {}),
   k: [...s.tasks].sort((x, y) => (x.id < y.id ? -1 : 1)).map(stableJSON)
 });
 
@@ -518,6 +547,7 @@ function addSamples() {
    Recurring tasks (generated from a reminder)
    ===================================================================== */
 const REC_AHEAD = 7;   // normal rules create tasks this many days ahead (today included)
+const RETIRED_RULES = ['mvbvcsqx67y2rk4']; // a rule stopped before stopped rules were tracked; safe to delete this line later
 const REC_BACK = 60;   // catch-up limit if the app wasn't opened for a long time
 const DOWN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const recEnd = rc => rc.weeks ? addDays(rc.start, rc.weeks * 7 - 1) : '';
@@ -535,11 +565,11 @@ const recPill = t => {
 /* ---------- streaks ----------
    A rule's streak = how many scheduled days in a row, ending with the most recent one, were completed ON that day.
    Days the rule isn't scheduled are skipped. Today doesn't break the streak until it has passed.
-   The on-time dates are stored on the rule (rc.done), so deleting or clearing tasks never erases a streak. */
+   The on-time dates are stored in state.streaks (outside the reminder), so deleting tasks or a stale device can't erase a streak. */
 const recDate = t => t.id.slice(-10); // generated ids end with the scheduled date: rec-<rule>-<YYYY-MM-DD>
 function recOf(t) { const rm = t.recFrom ? find(t.recFrom) : null; return rm && rm.kind === 'reminder' ? rm.recs.find(x => x.id === t.recId) || null : null; }
 function recStreak(rc) {
-  const today = todayStr(), end = recEnd(rc), done = new Set(rc.done);
+  const today = todayStr(), end = recEnd(rc), done = new Set([...((state.streaks || {})[rc.id] || []), ...rc.done]);
   let n = 0;
   for (let d = end && end < today ? end : today; d >= rc.start; d = addDays(d, -1)) {
     if (!rc.days.includes(parseD(d).getDay())) continue;
@@ -551,16 +581,26 @@ function recStreak(rc) {
 const streakTitle = n => n ? `${n}-day streak: ${plural(n, 'scheduled day')} in a row finished on the day` : 'No streak yet. Finish a task on its scheduled day to start one.';
 const streakPill = (n, title = streakTitle(n)) => `<span class="pill streak ${n > 0 ? 'hot' : ''}" title="${esc(title)}" aria-label="${esc(title)}">${ic('flame', 12)}${n}</span>`;
 const taskStreakPill = t => { const rc = t.recId ? recOf(t) : null; return rc ? streakPill(recStreak(rc)) : ''; };
-/* Keeps rc.done in step with the tasks: a task counts only if it was completed on its own scheduled day. */
+/* Keeps state.streaks in step with the tasks: a task counts only if it was completed on its own scheduled day.
+   Works from the tasks alone, so it doesn't matter whether the reminder still has the rule. */
 function syncStreaks() {
   let changed = false;
+  const bad = new Set(); // live tasks that are NOT counted (un-ticked, or finished late)
   for (const t of state.tasks) {
-    if (t.deleted || !t.recId) continue;
-    const rm = t.recFrom ? find(t.recFrom) : null, d = validDate(recDate(t));
-    const rc = rm && rm.kind === 'reminder' && d ? rm.recs.find(x => x.id === t.recId) : null; if (!rc) continue;
-    const onTime = t.status === 'completed' && !!t.completedAt && ymd(new Date(t.completedAt)) === d, has = rc.done.includes(d);
-    if (onTime && !has) { rc.done = [...rc.done, d].sort().slice(-800); touch(rm); changed = true; }
-    else if (!onTime && has) { rc.done = rc.done.filter(x => x !== d); touch(rm); changed = true; }
+    if (t.deleted || !t.recId || state.stopped[t.recId]) continue;
+    const d = validDate(recDate(t)); if (!d) continue;
+    const cur = state.streaks[t.recId] || [], has = cur.includes(d);
+    const onTime = t.status === 'completed' && !!t.completedAt && ymd(new Date(t.completedAt)) === d;
+    if (onTime && !has) { state.streaks[t.recId] = normDates([...cur, d]); changed = true; }
+    else if (!onTime) {
+      bad.add(t.recId + '|' + d);
+      if (has) { const n = cur.filter(x => x !== d); if (n.length) state.streaks[t.recId] = n; else delete state.streaks[t.recId]; changed = true; }
+    }
+  }
+  // Older versions kept the dates on the rule itself: copy them over (skipping any whose task was un-ticked).
+  for (const rm of state.tasks) if (!rm.deleted && rm.kind === 'reminder') for (const rc of rm.recs) if (rc.done.length) {
+    const cur = state.streaks[rc.id] || [], n = normDates([...cur, ...rc.done.filter(d => !bad.has(rc.id + '|' + d))]);
+    if (n.length !== cur.length) { state.streaks[rc.id] = n; changed = true; }
   }
   return changed;
 }
@@ -571,6 +611,18 @@ function runRecurring() {
   const today = todayStr(), yesterday = addDays(today, -1);
   const ids = new Set(state.tasks.map(t => t.id)); // includes tombstones, so deleted tasks are not recreated
   const fresh = []; let changed = false;
+  for (const id of RETIRED_RULES) if (!state.stopped[id]) { state.stopped[id] = Date.now(); changed = true; }
+  // A rule that was stopped stays stopped, even if a stale copy of its reminder brings it back.
+  for (const rm of state.tasks) if (!rm.deleted && rm.kind === 'reminder' && rm.recs.some(rc => state.stopped[rc.id])) { rm.recs = rm.recs.filter(rc => !state.stopped[rc.id]); changed = true; }
+  // Rule definitions are also kept in state.rules: a stale reminder can't delete a rule, because it is put back here.
+  for (const rm of state.tasks) if (!rm.deleted && rm.kind === 'reminder') for (const rc of rm.recs) {
+    if (!state.rules[rc.id]) { state.rules[rc.id] = { rm: rm.id, rc: ruleCore(rc) }; changed = true; }
+  }
+  for (const [id, r] of Object.entries(state.rules)) {
+    if (state.stopped[id]) { delete state.rules[id]; changed = true; continue; }
+    const rm = find(r.rm);
+    if (rm && rm.kind === 'reminder' && !rm.recs.some(x => x.id === id)) { rm.recs = [...rm.recs, normRec({ ...r.rc, gen: yesterday })]; changed = true; }
+  }
   for (const rm of state.tasks) {
     if (rm.deleted || rm.kind !== 'reminder' || !rm.recs.length) continue;
     for (const rc of rm.recs) {
@@ -591,11 +643,17 @@ function runRecurring() {
         fresh.push(normTask({ id, title: rc.title, notes: rc.notes, tag: rm.tag, kind: 'task', status: 'scheduled',
           todoDate: d, recId: rc.id, recFrom: rm.id, recDay: rc.dayOnly }));
       }
-      if (last > (rc.gen || '')) { rc.gen = last; touch(rm); changed = true; }
+      // gen is only a bookmark (task ids make generation safe to repeat), so it must NOT bump updatedAt: a device that merely
+      // opened the app on a new day would otherwise win the reminder's sync over real edits made elsewhere.
+      if (last > (rc.gen || '')) { rc.gen = last; changed = true; }
     }
   }
   if (fresh.length) { state.tasks.push(...fresh); changed = true; }
   if (syncStreaks()) changed = true; // before the cleanup below, so a day-only task is counted before it disappears
+  // Unfinished tasks from a stopped rule (today or later) are removed, whichever device created them.
+  for (const t of [...state.tasks]) {
+    if (!t.deleted && t.recId && state.stopped[t.recId] && t.status !== 'completed' && t.todoDate >= today) { deleteTask(t.id); changed = true; }
+  }
   // "Only on the day" tasks disappear once their day has passed, done or not. (The tombstone keeps them from being recreated.)
   for (const t of [...state.tasks]) {
     if (!t.deleted && t.recDay && t.todoDate && t.todoDate < today) { deleteTask(t.id); changed = true; }
@@ -1019,6 +1077,7 @@ document.addEventListener('click', async e => {
       if (k && confirm('Stop repeating this task? Its unfinished tasks from today onward are removed. Finished and past tasks stay on your list.')) {
         const today = todayStr();
         state.tasks.filter(x => !x.deleted && x.recFrom === k.id && x.recId === rid && x.status !== 'completed' && x.todoDate >= today).forEach(x => deleteTask(x.id));
+        state.stopped[rid] = Date.now(); delete state.rules[rid];
         k.recs = k.recs.filter(x => x.id !== rid); touch(k); commit(); renderDetail();
       }
       break;
@@ -1078,9 +1137,14 @@ $('#file').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
     const j = JSON.parse(await f.text());
-    const inc = normalizeState(j.data || j);
-    state = mergeStates(state, inc); commit();
-    toast(`Imported ${inc.tasks.filter(t => !t.deleted).length} tasks.`);
+    const d = j && (j.data || j);
+    if (j && j.enc) { toast('That backup is encrypted. Unlock sync and export an unencrypted backup first.'); return; }
+    if (!d || !Array.isArray(d.tasks)) throw new Error('not a backup');
+    const inc = normalizeState(d), n = inc.tasks.filter(t => !t.deleted).length;
+    if (!confirm(`Replace everything with this backup (${n} tasks)? Your current tasks, on every synced device, will be replaced.`)) return;
+    inc.epoch = Date.now(); // marks this as a restore, so other devices drop what it replaced instead of merging it back in
+    state = inc; commit();
+    toast(`Restored ${n} tasks from the backup.`);
   } catch { toast('That file is not a valid backup.'); }
 });
 window.addEventListener('pagehide', () => { if (dirty) flush(); });
