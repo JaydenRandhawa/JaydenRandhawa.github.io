@@ -229,7 +229,7 @@
         <div class="row-btns">
           <button type="button" class="btn primary" data-action="connect">Connect &amp; sync</button>
           <button type="button" class="btn" data-action="disconnect">Disconnect</button>
-          <button type="button" class="btn danger" data-action="disconnect-delete" title="Disconnect and permanently delete the cloud copy">Disconnect &amp; delete cloud data</button>
+          <button type="button" class="btn danger" data-action="disconnect-erase" title="Disconnect and erase this device's copy. The cloud copy is not touched.">Disconnect &amp; erase this device</button>
         </div>
       </div>
       <p id="sy-status" class="status" role="status">Not connected</p>
@@ -329,6 +329,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
