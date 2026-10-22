@@ -917,6 +917,21 @@ async function doConnect() {
   await connectSync();
 }
 function disconnect() { teardownSync(); settings.sync = false; saveSettings(); setStatus('off'); }
+/* Disconnect AND erase the cloud copy (the synced document and the calendar feed document). Tasks on this device are kept. */
+async function disconnectAndDelete() {
+  if (!sync.ref || !sync.db) { toast('Connect first, so the cloud copy can be reached and deleted.'); return; }
+  if (!confirm('Disconnect and permanently delete the cloud copy of your tasks and calendar feed?\n\nYour tasks stay on this device. Any other device still connected with this account ID will upload its copy again, so disconnect those too.')) return;
+  const { ref, db } = sync, token = state && state.cal.token;
+  sync.blocked = true; clearTimeout(sync.pushT);                      // no uploads while deleting
+  if (sync.unsub) { try { sync.unsub(); } catch {} sync.unsub = null; } // stop listening first, or the deletion would make us upload everything again
+  try {
+    await ref.delete();
+    if (token) await db.collection('paperTodoCal').doc(token).delete();
+  } catch (e) { toast('Could not delete the cloud data: ' + e.message); connectSync(); return; }
+  teardownSync(); settings.sync = false; saveSettings(); setStatus('off');
+  if (state && token) { state.cal = { ...state.cal, token: '', at: Date.now() }; commit(); refreshCal(); } // feed turned off locally too
+  toast('Disconnected. The cloud copy was deleted; your tasks are still on this device.');
+}
 
 /* ---------- calendar feed ---------- */
 const icsText = x => String(x).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
@@ -1059,6 +1074,7 @@ document.addEventListener('click', async e => {
     case 'gen-id': $('#sy-id').value = genId(); break;
     case 'connect': await doConnect(); break;
     case 'disconnect': disconnect(); break;
+    case 'disconnect-delete': disconnectAndDelete(); break;
     case 'export': exportData(); break;
     case 'import': $('#file').click(); break;
     case 'sample': addSamples(); break;
