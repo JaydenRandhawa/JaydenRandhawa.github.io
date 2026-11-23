@@ -133,7 +133,7 @@ The calendar feed lets your phone's calendar show your tasks. You subscribe once
 
 1. In the calendar window, tap **Turn on calendar feed**.
 2. Subscribe:
-   - **iPhone, iPad, Mac:** tap **Subscribe on this device**, or copy the iPhone/iPad/Mac link and add it as a subscribed calendar.
+   - **iPhone, iPad, Mac:** Press the  **Calendars** icon in the bottom right, Scroll down and press **Add Calendar**, choose **Add Subscription Calendar** and paste the iPhone, iPad, Mac link.
    - **Google Calendar:** copy the Google Calendar link, then in Google Calendar choose **Other calendars**, then **From URL**, and paste it.
 3. Open any task or reminder and tick **Show on my calendar feed**. Only ticked items appear.
 
