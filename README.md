@@ -127,19 +127,7 @@ The lock encrypts your tasks with AES-256, both on your device and in the cloud.
 
 ## Calendar integration
 
-The calendar feed lets your phone's calendar show your tasks. You subscribe once, and it updates by itself afterwards. It is **one-way**: changes in your calendar app don't come back into Paper Todo.
-
-**You need:** cloud sync turned on, and a free Cloudflare account for a one-time setup.
-
-### One-time setup
-
-1. Make sure cloud sync is connected (see above).
-2. Create a free account at [dash.cloudflare.com](https://dash.cloudflare.com).
-3. Open **Workers & Pages** and create a new Worker. Name it something like `todo-calendar`.
-4. Tap the **calendar icon** in the app, open **Set up the free Cloudflare Worker**, and tap **Copy code**.
-5. In Cloudflare, open the Worker's code editor, replace everything with the copied code, and **Deploy**.
-6. Copy the Worker's address (it ends in `.workers.dev`) into the **Worker URL** box in the app. This is saved with your account, so you only do it once.
-7. Make sure the `paperTodoCal` block is in your Firestore rules (included above).
+The calendar feed lets your phone's calendar show your tasks. You subscribe once, and it updates by itself afterwards. It is **one-way**: changes in your calendar app don't come back into ypur TODO list.
 
 ### Subscribing
 
