@@ -44,6 +44,8 @@ const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 const validTime = s => /^([01]\d|2[0-3]):[0-5]\d$/.test(s || '') ? s : '';
 const fmtTime = hm => { const [h, m] = hm.split(':').map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
 const addMin = (hm, n) => { const [h, m] = hm.split(':').map(Number), t = Math.min(h * 60 + m + n, 23 * 60 + 59); return pad(Math.floor(t / 60)) + ':' + pad(t % 60); };
+const nowHM = () => { const n = new Date(); return pad(n.getHours()) + ':' + pad(n.getMinutes()); };
+const tpart = tm => tm ? ` · ${fmtTime(tm)}` : '';
 function fmt(s) {
   const d = parseD(s), n = new Date();
   return d.toLocaleDateString(undefined, d.getFullYear() === n.getFullYear()
@@ -92,6 +94,8 @@ function normTask(t) {
     kind: t.kind === 'reminder' ? 'reminder' : 'task',
     todoDate: validDate(t.todoDate),
     dueDate: validDate(t.dueDate),
+    todoTime: validDate(t.todoDate) ? validTime(t.todoTime) : '',
+    dueTime: validDate(t.dueDate) ? validTime(t.dueTime) : '',
     status: STATUSES.includes(t.status) ? t.status : 'unorganized',
     prevStatus: STATUSES.includes(t.prevStatus) ? t.prevStatus : null,
     createdAt: +t.createdAt || Date.now(),
@@ -334,15 +338,16 @@ function sectionOf(t) {
   return 'todo';
 }
 const actDate = t => [t.todoDate, t.dueDate].filter(Boolean).sort()[0] || '';
-const byUrgency = (a, b) => (actDate(a) || '9999-12-31').localeCompare(actDate(b) || '9999-12-31') || (a.startTime || '').localeCompare(b.startTime || '') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt - b.createdAt;
+const actTime = t => (t.todoDate === actDate(t) ? (t.todoTime || t.startTime) : t.dueTime) || ''; // time of day on the date you next need to act
+const byUrgency = (a, b) => (actDate(a) || '9999-12-31').localeCompare(actDate(b) || '9999-12-31') || actTime(a).localeCompare(actTime(b)) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || a.createdAt - b.createdAt;
 
 /* Deadline = due date, or the to-do date when there is no due date. Past it → overdue; today/tomorrow → soon. */
 function urgency(t) {
   if (t.status === 'completed') return 'none';
   const dl = t.dueDate || t.todoDate;
   if (!dl) return 'none';
-  const d = diffDays(dl, todayStr());
-  return d < 0 ? 'overdue' : d <= 1 ? 'soon' : 'none';
+  const d = diffDays(dl, todayStr()), tm = t.dueDate ? t.dueTime : t.todoTime;
+  return d < 0 || (d === 0 && tm && tm < nowHM()) ? 'overdue' : d <= 1 ? 'soon' : 'none';
 }
 /* Date view groups tasks by the exact date you next need to act (earliest of to-do and due date). */
 const MAX_GAP_LINES = 10; // longer runs of empty days collapse into one "N empty days" line
@@ -398,14 +403,14 @@ function rowHTML(t, showTag, secId) {
   if (showTag && t.tag) meta += `<span class="pill"><i class="dot" style="background:${tagColor(t.tag)}"></i>${esc(t.tag)}</span>`;
   if (t.todoDate) {
     const d = diffDays(t.todoDate, today), lab = t.kind === 'reminder' ? 'On' : 'Do';
-    const txt = d === 0 ? `${lab} today` : d === 1 ? `${lab} tomorrow` : `${lab} ${fmt(t.todoDate)}`;
+    const txt = (d === 0 ? `${lab} today` : d === 1 ? `${lab} tomorrow` : `${lab} ${fmt(t.todoDate)}`) + tpart(t.todoTime);
     const cls = done ? '' : t.dueDate ? (d < 0 ? 'amber' : '') : ucls;
     meta += `<span class="pill ${cls}" title="${t.kind === 'reminder' ? 'Reminder date' : 'Planned work date'}">${ic('cal', 12)}${txt}</span>`;
   }
   if (t.kind === 'reminder' && !t.allDay && t.startTime && t.endTime) meta += `<span class="pill" title="Time block">${ic('clock', 12)}${fmtTime(t.startTime)} – ${fmtTime(t.endTime)}</span>`;
   if (t.dueDate) {
     const d = diffDays(t.dueDate, today);
-    const txt = done ? `Due ${fmt(t.dueDate)}` : d < 0 ? `${-d}d overdue` : d === 0 ? 'Due today' : d === 1 ? 'Due tomorrow' : `Due ${fmt(t.dueDate)}`;
+    const txt = (done ? `Due ${fmt(t.dueDate)}` : d < 0 ? `${-d}d overdue` : d === 0 ? (t.dueTime && t.dueTime < nowHM() ? 'Overdue' : 'Due today') : d === 1 ? 'Due tomorrow' : `Due ${fmt(t.dueDate)}`) + tpart(t.dueTime);
     meta += `<span class="pill ${ucls}" title="Official deadline">${txt}</span>`;
   }
   if (t.todoDate && t.dueDate && !done) {
@@ -736,8 +741,12 @@ function fillLinkOptions(current) {
   $('#f-link').innerHTML = '<option value="">None</option>' + rs.map(r => `<option value="${esc(r.id)}">${esc(r.title)}${r.todoDate ? ' (' + esc(fmt(r.todoDate)) + ')' : ''}</option>`).join('');
   $('#f-link').value = current || '';
 }
+function syncTimeInputs() { // a time needs a date: disable (and clear) the time box while its date is empty
+  [['f-todo', 'f-todo-t'], ['f-due', 'f-due-t']].forEach(([d, t]) => { const has = !!$('#' + d).value; $('#' + t).disabled = !has; if (!has) $('#' + t).value = ''; });
+}
 function setKind(k) {
   formKind = k;
+  $('#todo-time').hidden = k === 'reminder'; // reminders use the time block instead
   $('#time-block').hidden = k !== 'reminder'; $('#link-row').hidden = k === 'reminder';
   $$('[data-action=kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === k)));
   $('#lbl-todo').textContent = k === 'reminder' ? 'Reminder date' : 'To-do date';
@@ -746,10 +755,10 @@ function setKind(k) {
 function openTask(id, preset) {
   editingId = id || null;
   const t = id ? find(id) : null;
-  const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', status: 'unorganized', allDay: true, startTime: '', endTime: '', linkId: '', ...(preset || {}) };
+  const p = t || { title: '', notes: '', tag: '', kind: 'task', todoDate: '', dueDate: '', todoTime: '', dueTime: '', status: 'unorganized', allDay: true, startTime: '', endTime: '', linkId: '', ...(preset || {}) };
   $('#task-heading').textContent = t ? 'Edit ' + (p.kind === 'reminder' ? 'reminder' : 'task') : (p.kind === 'reminder' ? 'New reminder' : 'New task');
   $('#f-title').value = p.title; $('#f-notes').value = p.notes; $('#f-tag').value = p.tag || '';
-  $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-status').value = p.status; $('#f-cal').checked = !!p.cal;
+  $('#f-todo').value = p.todoDate; $('#f-due').value = p.dueDate; $('#f-todo-t').value = p.todoTime || ''; $('#f-due-t').value = p.dueTime || ''; syncTimeInputs(); $('#f-status').value = p.status; $('#f-cal').checked = !!p.cal;
   $('#btn-del').hidden = !t;
   $('#f-start').value = p.startTime || ''; $('#f-end').value = p.endTime || '';
   fillLinkOptions(p.linkId); setAllDay(p.allDay !== false);
@@ -773,7 +782,7 @@ function saveTask() {
   const v = {
     allDay: formKind === 'reminder' ? formAllDay : true, startTime, endTime, linkId: formKind === 'task' ? $('#f-link').value : '',
     title, notes: $('#f-notes').value.trim(), tag: canonTag($('#f-tag').value.trim()), kind: formKind,
-    todoDate: $('#f-todo').value, dueDate: $('#f-due').value, status: $('#f-status').value, cal: $('#f-cal').checked
+    todoDate: $('#f-todo').value, dueDate: $('#f-due').value, todoTime: formKind === 'task' ? $('#f-todo-t').value : '', dueTime: $('#f-due-t').value, status: $('#f-status').value, cal: $('#f-cal').checked
   };
   if (v.kind === 'task' && v.status === 'unorganized' && v.todoDate) v.status = 'scheduled';
   const t = editingId ? find(editingId) : null;
@@ -803,10 +812,10 @@ function detailInfo(t) {
   let rows = '';
   if (t.todoDate) {
     const late = diffDays(t.todoDate, today) < 0;
-    rows += row(t.kind === 'reminder' ? 'Reminder date' : 'To-do date', `${esc(fmt(t.todoDate))}<span class="rel">${relDay(t.todoDate)}</span>`, done ? '' : t.dueDate ? (late ? 'amber' : '') : tone);
+    rows += row(t.kind === 'reminder' ? 'Reminder date' : 'To-do date', `${esc(fmt(t.todoDate) + tpart(t.todoTime))}<span class="rel">${relDay(t.todoDate)}</span>`, done ? '' : t.dueDate ? (late ? 'amber' : '') : tone);
   }
   if (t.kind === 'reminder' && t.todoDate) rows += row('Time', !t.allDay && t.startTime && t.endTime ? `${fmtTime(t.startTime)} – ${fmtTime(t.endTime)}` : 'All day');
-  if (t.dueDate) rows += row('Due date', `${esc(fmt(t.dueDate))}<span class="rel">${relDay(t.dueDate)}</span>`, done ? '' : tone);
+  if (t.dueDate) rows += row('Due date', `${esc(fmt(t.dueDate) + tpart(t.dueTime))}<span class="rel">${relDay(t.dueDate)}</span>`, done ? '' : tone);
   if (t.todoDate && t.dueDate && !done) {
     const g = diffDays(t.dueDate, t.todoDate);
     rows += row('Buffer', g > 0 ? `${plural(g, 'day')} between to-do and due` : g === 0 ? 'Same day' : `${plural(-g, 'day')} after the due date`, g < 0 ? 'red' : '');
@@ -954,17 +963,18 @@ function buildICS() {
       linked.length ? 'Linked tasks:\n' + linked.map(x => '- ' + x.title + (x.dueDate ? ' (due ' + fmt(x.dueDate) + ')' : '')).join('\n') : ''
     ].filter(Boolean).join('\n');
     const timed = t.kind === 'reminder' && !t.allDay && !!t.startTime && !!t.endTime && !!t.todoDate;
-    const add = (d, prefix, suffix, isTimed) => {
+    const add = (d, prefix, suffix, s, e) => { // s/e = start/end time; empty s means an all-day entry
       const d8 = d.replace(/-/g, '');
       L.push('BEGIN:VEVENT', `UID:${t.id}-${suffix}@paper-todo`, `DTSTAMP:${stamp}`);
-      if (isTimed) L.push(`DTSTART:${d8}T${t.startTime.replace(':', '')}00`, `DTEND:${d8}T${t.endTime.replace(':', '')}00`);
+      if (s) L.push(`DTSTART:${d8}T${s.replace(':', '')}00`, `DTEND:${d8}T${e.replace(':', '')}00`);
       else { const next = parseD(d); next.setDate(next.getDate() + 1); L.push(`DTSTART;VALUE=DATE:${d8}`, `DTEND;VALUE=DATE:${ymd(next).replace(/-/g, '')}`); }
       L.push(`SUMMARY:${icsText(prefix + t.title)}`);
       if (desc) L.push('DESCRIPTION:' + icsText(desc));
-      L.push(isTimed ? 'TRANSP:OPAQUE' : 'TRANSP:TRANSPARENT', 'END:VEVENT');
+      L.push(s && suffix === 'do' ? 'TRANSP:OPAQUE' : 'TRANSP:TRANSPARENT', 'END:VEVENT'); // due times are deadlines, not busy time
     };
-    if (t.todoDate && (timed || t.todoDate !== t.dueDate)) add(t.todoDate, t.kind === 'reminder' ? '' : 'Do: ', 'do', timed);
-    if (t.dueDate) add(t.dueDate, 'Due: ', 'due', false);
+    const doS = timed ? t.startTime : (t.todoTime || ''), doE = timed ? t.endTime : (doS ? addMin(doS, 30) : ''); // a task with just a time gets a 30-minute entry
+    if (t.todoDate && (doS || t.todoDate !== t.dueDate)) add(t.todoDate, t.kind === 'reminder' ? '' : 'Do: ', 'do', doS, doE);
+    if (t.dueDate) add(t.dueDate, 'Due: ', 'due', t.dueTime, t.dueTime ? addMin(t.dueTime, 30) : '');
   });
   L.push('END:VCALENDAR');
   return L.map(icsFold).join('\r\n') + '\r\n';
@@ -1080,6 +1090,7 @@ document.addEventListener('click', async e => {
     case 'uncal': { const k = find(id); if (k) { k.cal = false; touch(k); commit(); } break; }
     case 'open-cal': openCal(); break;
     case 'allday': setAllDay(el.dataset.val === '1'); break;
+    case 'clear-time': $('#' + el.dataset.target).value = ''; break;
     case 'open-link': openDetail(el.dataset.link); break;
     case 'open': openDetail(id); break;
     case 'detail-edit': { const did = detailId; closeModals(); backTo = did; openTask(did); break; }
@@ -1117,6 +1128,7 @@ $('#cal-base').addEventListener('change', e => {
   state.cal = { ...state.cal, base: v, at: Date.now() }; settings.feedBase = ''; saveSettings(); commit(); refreshCal();
 });
 $('#f-link').addEventListener('change', updateLinkUI);
+['#f-todo', '#f-due'].forEach(s => ['input', 'change'].forEach(ev => $(s).addEventListener(ev, syncTimeInputs)));
 $('#r-forever').addEventListener('change', syncRecForever);
 $('#rec-form').addEventListener('submit', e => { e.preventDefault(); saveRec(); });
 document.addEventListener('change', e => {
@@ -1164,7 +1176,13 @@ $('#file').addEventListener('change', async e => {
 });
 window.addEventListener('pagehide', () => { if (dirty) flush(); });
 window.addEventListener('online', () => { if (settings.sync && state && sync.status === 'error') connectSync(); });
-const dayCheck = () => { if (state && dayKey !== todayStr()) commit(); };
+let lateSig = '';
+const dayCheck = () => {
+  if (!state) return;
+  if (dayKey !== todayStr()) { commit(); return; }
+  const sig = state.tasks.filter(t => !t.deleted && urgency(t) === 'overdue').map(t => t.id).join(); // a task just went overdue by the clock
+  if (sig !== lateSig) { lateSig = sig; render(); }
+};
 document.addEventListener('visibilitychange', () => { if (!document.hidden) dayCheck(); });
 setInterval(dayCheck, 60000);
 

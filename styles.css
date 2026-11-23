@@ -29,7 +29,7 @@ body.modal-open{overflow:hidden}
 .sdot.ok{background:var(--green)} .sdot.busy{background:var(--amber)} .sdot.err{background:var(--red)}
 
 .quick{display:flex;gap:8px;margin:18px 0 14px}
-.inp,.fld input,.fld textarea,.fld select{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;color:var(--ink);font:inherit;font-size:16px;width:100%;min-width:0}
+.inp,.fld input,.fld textarea,.fld select,.tm input{background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;color:var(--ink);font:inherit;font-size:16px;width:100%;min-width:0}
 .quick .inp{background:var(--raise);flex:1}
 .inp::placeholder,.fld ::placeholder{color:var(--faint)}
 
@@ -182,4 +182,10 @@ body[data-sync=error] .clock b::before{background:var(--red)}
 .rec-presets{display:flex;gap:16px;font-size:14px}
 .rec-body{flex:1;min-width:0;padding:11px 4px 11px 6px}
 .rec-body .row-title{font-size:16.5px}
-.fld input:disabled{opacity:.45}
+.fld input:disabled,.tm input:disabled{opacity:.45}
+
+/* ---------- optional time under a date ---------- */
+.dt{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;min-width:0}
+.fld.flat{margin-bottom:0}
+.tm{display:flex;align-items:center;gap:4px}
+.tm input{flex:1}

@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Delius&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>window.tailwind && (tailwind.config = { corePlugins: { preflight: false } });</script>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
 /* Streak pill: neutral at 0, orange once a streak is running. Tweak the three colours here. */
 :root { --streak: #c2410c; --streak-bg: #ffedd5; --streak-bd: #fdba74; }
@@ -122,8 +122,20 @@
       </div>
     </div>
     <div class="grid2">
-      <label class="fld"><span id="lbl-todo">To-do date</span><input id="f-todo" type="date"></label>
-      <label class="fld"><span>Due date</span><input id="f-due" type="date"></label>
+      <div class="dt">
+        <label class="fld flat"><span id="lbl-todo">To-do date</span><input id="f-todo" type="date"></label>
+        <div class="tm" id="todo-time">
+          <input id="f-todo-t" type="time" aria-label="To-do time (optional)">
+          <button type="button" class="icon-btn sm" data-action="clear-time" data-target="f-todo-t" aria-label="Clear to-do time"><span data-ic="x" data-s="16"></span></button>
+        </div>
+      </div>
+      <div class="dt">
+        <label class="fld flat"><span>Due date</span><input id="f-due" type="date"></label>
+        <div class="tm">
+          <input id="f-due-t" type="time" aria-label="Due time (optional)">
+          <button type="button" class="icon-btn sm" data-action="clear-time" data-target="f-due-t" aria-label="Clear due time"><span data-ic="x" data-s="16"></span></button>
+        </div>
+      </div>
     </div>
     <div id="time-block" hidden>
       <div class="fld"><span>Time</span>
@@ -141,7 +153,7 @@
     <p class="hint" id="link-hint" hidden>Linked tasks stay off your calendar. The reminder shows there instead, with this task listed in its details.</p>
     <p class="hint" id="linked-tasks" hidden></p>
     <label class="chk"><input type="checkbox" id="f-cal"><span>Show on my calendar feed</span></label>
-    <p class="hint">The to-do date is when you plan to work on it. The due date is the official deadline. Adding a to-do date to an unorganized task schedules it.</p>
+    <p class="hint">The to-do date is when you plan to work on it. The due date is the official deadline. Times are optional and need a date; a due time marks the task overdue once it passes. Adding a to-do date to an unorganized task schedules it.</p>
     <div class="sheet-foot">
       <button type="button" class="btn danger" id="btn-del" data-action="delete-task">Delete</button>
       <span class="grow"></span>
@@ -329,6 +341,6 @@ service cloud.firestore {
 <div id="toast" role="status\" aria-live="polite"></div>
 
 <script src="firebase-config.js"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
