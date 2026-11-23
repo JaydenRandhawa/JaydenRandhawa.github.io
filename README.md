@@ -97,31 +97,6 @@ Paper Todo has no usernames or passwords. Your **account ID** is what ties your 
 
 Cloud sync uses a free Firebase Firestore database that you set up once. After that, edits on one device appear on the others within moments, and changes merge task by task, so editing different tasks on two devices at the same time is safe.
 
-### One-time setup
-
-1. In the [Firebase console](https://console.firebase.google.com/), create a project and add a **Firestore Database**.
-2. In **Project settings**, add a **Web app** and copy its `firebaseConfig`.
-3. Save the config in `firebase-config.js` next to `index.html`. If you can't edit files, you can paste it into the box in the sync window instead.
-4. In Firestore **Rules**, paste the following and publish:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{db}/documents {
-    match /paperTodo/{accountId} {
-      allow get, delete: if true;
-      allow create, update: if request.resource.data.schema == 2;
-    }
-    match /paperTodoCal/{token} {
-      allow get, delete: if true;
-      allow create, update: if request.resource.data.schema == 2;
-    }
-  }
-}
-```
-
-These rules let anyone who knows a document's exact name read or write it, but nobody can list your data. That is why the account ID needs to be long and private.
-
 ### Connecting a device
 
 1. Tap the **cloud icon** at the top right.
